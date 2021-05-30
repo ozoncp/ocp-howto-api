@@ -54,10 +54,10 @@ var _ = Describe("Flusher", func() {
 			mockRepo.EXPECT().AddHowto(gomock.Any()).DoAndReturn(
 				func(h howto.Howto) (uint64, error) {
 					if index == failOn {
-						return h.Id, errSome
+						return 0, errSome
 					}
 					index++
-					return 0, nil
+					return h.Id, nil
 				},
 			).MinTimes(1)
 
