@@ -19,7 +19,7 @@ func (f *flusher) Flush(howtos []howto.Howto) []howto.Howto {
 			return howtos[i:]
 		}
 	}
-	return howtos
+	return nil
 }
 
 func New(repo repo.Repo) Flusher {
