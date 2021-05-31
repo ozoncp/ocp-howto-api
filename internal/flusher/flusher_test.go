@@ -51,7 +51,7 @@ var _ = Describe("Flusher", func() {
 			mockRepo.EXPECT().AddHowto(gomock.Any()).Return(dummyId, nil).MinTimes(1)
 		})
 		It("", func() {
-			Expect(f.Flush(toFlush)).Should(BeEmpty())
+			Expect(failedToFlush).Should(BeEmpty())
 		})
 	})
 
