@@ -55,6 +55,7 @@ func (saver saver) Init() {
 }
 
 func (saver saver) Close() {
+	saver.alarmer.Close()
 	saver.save()
 }
 
