@@ -15,9 +15,9 @@ type periodAlarmer struct {
 	done   chan struct{}
 }
 
-func NewPeriodAlarmer(milliseconds uint) Alarmer {
+func NewPeriodAlarmer(period time.Duration) Alarmer {
 	return &periodAlarmer{
-		period: time.Duration(milliseconds) * time.Millisecond,
+		period: period,
 		alarm:  make(chan struct{}),
 		done:   make(chan struct{}),
 	}

@@ -8,29 +8,32 @@ import (
 	"github.com/ozoncp/ocp-howto-api/internal/alarmer"
 )
 
+func milliseconds(milliseconds time.Duration) time.Duration {
+	return milliseconds * time.Millisecond
+}
+
 var _ = Describe("Alarmer", func() {
 
 	Context("PeriodAlarmer", func() {
 
 		It("alarms successfully", func() {
-			var period uint = 100
-			timeout := 1500
+			period := milliseconds(100)
+			timeout := milliseconds(150)
 
 			alarmer := alarmer.NewPeriodAlarmer(period)
 			alarmer.Init()
 			defer alarmer.Close()
 
-			timeoutTimer := time.NewTimer(time.Duration(timeout) * time.Millisecond)
+			timeoutExceeded := time.After(timeout)
 			select {
 			case <-alarmer.Alarm():
-				break
-			case <-timeoutTimer.C:
-				Fail("Timeout")
+			case <-timeoutExceeded:
+				Fail("Timeout exceeded. Alarmer does not alarm")
 			}
 		})
 
 		It("alarms periodically", func() {
-			var period uint = 10
+			period := milliseconds(10)
 			numOfAlarms := 50
 
 			alarmer := alarmer.NewPeriodAlarmer(period)
@@ -41,14 +44,14 @@ var _ = Describe("Alarmer", func() {
 			for i := 0; i < numOfAlarms; i++ {
 				<-alarmer.Alarm()
 			}
-			realDuration := time.Since(startTime).Milliseconds()
-			expectedDuration := period * uint(numOfAlarms)
+			realDuration := time.Since(startTime)
+			expectedDuration := int(period) * numOfAlarms
 
 			Expect(realDuration).Should(BeNumerically(">=", expectedDuration))
 		})
 
 		It("closes successfully", func() {
-			alarmer := alarmer.NewPeriodAlarmer(100)
+			alarmer := alarmer.NewPeriodAlarmer(milliseconds(100))
 			alarmer.Init()
 			<-alarmer.Alarm()
 			alarmer.Close()
