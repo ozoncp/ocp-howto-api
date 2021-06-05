@@ -10,14 +10,16 @@ type Alarmer interface {
 
 type periodAlarmer struct {
 	Alarmer
-	periodMs uint
-	alarm    chan struct{}
+	period time.Duration
+	alarm  chan struct{}
+	done   chan struct{}
 }
 
-func NewPeriodAlarmer(periodMs uint) Alarmer {
+func NewPeriodAlarmer(milliseconds uint) Alarmer {
 	return &periodAlarmer{
-		periodMs: periodMs,
-		alarm:    make(chan struct{}),
+		period: time.Duration(milliseconds) * time.Millisecond,
+		alarm:  make(chan struct{}),
+		done:   make(chan struct{}),
 	}
 }
 
@@ -30,14 +32,24 @@ func (alarmer periodAlarmer) Init() {
 }
 
 func (alarmer periodAlarmer) Close() {
-	close(alarmer.alarm)
+	alarmer.done <- struct{}{}
 }
 
 func (alarmer periodAlarmer) poll() {
-	alarmer.waitPeriod()
-	alarmer.alarm <- struct{}{}
+	timer := time.NewTimer(alarmer.period)
+	for {
+		select {
+		case <-alarmer.done:
+			alarmer.close()
+			return
+		case <-timer.C:
+			alarmer.alarm <- struct{}{}
+			timer.Reset(alarmer.period)
+		}
+	}
 }
 
-func (alarmer periodAlarmer) waitPeriod() {
-	time.Sleep(time.Millisecond * time.Duration(alarmer.periodMs))
+func (alarmer periodAlarmer) close() {
+	close(alarmer.alarm)
+	close(alarmer.done)
 }
