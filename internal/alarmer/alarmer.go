@@ -23,19 +23,19 @@ func NewPeriodAlarmer(period time.Duration) Alarmer {
 	}
 }
 
-func (alarmer periodAlarmer) Alarm() <-chan struct{} {
+func (alarmer *periodAlarmer) Alarm() <-chan struct{} {
 	return alarmer.alarm
 }
 
-func (alarmer periodAlarmer) Init() {
+func (alarmer *periodAlarmer) Init() {
 	go alarmer.poll()
 }
 
-func (alarmer periodAlarmer) Close() {
+func (alarmer *periodAlarmer) Close() {
 	alarmer.done <- struct{}{}
 }
 
-func (alarmer periodAlarmer) poll() {
+func (alarmer *periodAlarmer) poll() {
 	timer := time.NewTimer(alarmer.period)
 	for {
 		select {
@@ -49,7 +49,7 @@ func (alarmer periodAlarmer) poll() {
 	}
 }
 
-func (alarmer periodAlarmer) close() {
+func (alarmer *periodAlarmer) close() {
 	close(alarmer.alarm)
 	close(alarmer.done)
 }
