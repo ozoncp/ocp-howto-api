@@ -38,7 +38,7 @@ func NewSaver(
 ) Saver {
 	return &saver{
 		capacity:   capacity,
-		queue:      make([]howto.Howto, 0, capacity),
+		queue:      createEmptySlice(capacity),
 		flusher:    flusher,
 		onOverflow: onOverflow,
 		alarm:      alarmer.Alarm(),
@@ -47,19 +47,19 @@ func NewSaver(
 	}
 }
 
-func (saver saver) Save(howto howto.Howto) {
+func (saver *saver) Save(howto howto.Howto) {
 	saver.add <- howto
 }
 
-func (saver saver) Init() {
+func (saver *saver) Init() {
 	go saver.poll()
 }
 
-func (saver saver) Close() {
+func (saver *saver) Close() {
 	saver.done <- struct{}{}
 }
 
-func (saver saver) poll() {
+func (saver *saver) poll() {
 	for {
 		select {
 		case howto := <-saver.add:
@@ -73,22 +73,24 @@ func (saver saver) poll() {
 	}
 }
 
-func (saver saver) flush() {
-	saver.queue = saver.flusher.Flush(saver.queue)
+func (saver *saver) flush() {
+	if len(saver.queue) > 0 {
+		saver.queue = saver.flusher.Flush(saver.queue)
+	}
 }
 
-func (saver saver) addToQueue(howto howto.Howto) {
+func (saver *saver) addToQueue(howto howto.Howto) {
 	if saver.isFull() {
 		saver.resolveOverflow()
 	}
 	saver.queue = append(saver.queue, howto)
 }
 
-func (saver saver) isFull() bool {
+func (saver *saver) isFull() bool {
 	return len(saver.queue) == int(saver.capacity)
 }
 
-func (saver saver) resolveOverflow() {
+func (saver *saver) resolveOverflow() {
 	switch saver.onOverflow {
 	case OnOverflowClearOldest:
 		saver.queue = saver.queue[1:]
@@ -96,6 +98,10 @@ func (saver saver) resolveOverflow() {
 	case OnOverflowClearAll:
 		fallthrough
 	default:
-		saver.queue = make([]howto.Howto, 0, saver.capacity)
+		saver.queue = createEmptySlice(saver.capacity)
 	}
+}
+
+func createEmptySlice(capacity uint) []howto.Howto {
+	return make([]howto.Howto, 0, capacity)
 }
