@@ -22,10 +22,12 @@ type Saver interface {
 type saver struct {
 	Saver
 	capacity   uint
-	toSave     []howto.Howto
+	queue      []howto.Howto
 	flusher    flusher.Flusher
-	alarmer    alarmer.Alarmer
 	onOverflow OnOverflow
+	alarm      <-chan struct{}
+	add        chan howto.Howto
+	done       chan struct{}
 }
 
 func NewSaver(
@@ -36,18 +38,17 @@ func NewSaver(
 ) Saver {
 	return &saver{
 		capacity:   capacity,
-		toSave:     make([]howto.Howto, 0, capacity),
+		queue:      make([]howto.Howto, 0, capacity),
 		flusher:    flusher,
-		alarmer:    alarmer,
 		onOverflow: onOverflow,
+		alarm:      alarmer.Alarm(),
+		add:        make(chan howto.Howto),
+		done:       make(chan struct{}),
 	}
 }
 
 func (saver saver) Save(howto howto.Howto) {
-	if saver.isFull() {
-		saver.resolveOverflow()
-	}
-	saver.toSave = append(saver.toSave, howto)
+	saver.add <- howto
 }
 
 func (saver saver) Init() {
@@ -55,36 +56,46 @@ func (saver saver) Init() {
 }
 
 func (saver saver) Close() {
-	saver.alarmer.Close()
-	saver.save()
+	saver.done <- struct{}{}
+}
+
+func (saver saver) poll() {
+	for {
+		select {
+		case howto := <-saver.add:
+			saver.addToQueue(howto)
+		case <-saver.alarm:
+			saver.flush()
+		case <-saver.done:
+			saver.flush()
+			return
+		}
+	}
+}
+
+func (saver saver) flush() {
+	saver.queue = saver.flusher.Flush(saver.queue)
+}
+
+func (saver saver) addToQueue(howto howto.Howto) {
+	if saver.isFull() {
+		saver.resolveOverflow()
+	}
+	saver.queue = append(saver.queue, howto)
 }
 
 func (saver saver) isFull() bool {
-	return len(saver.toSave) == int(saver.capacity)
+	return len(saver.queue) == int(saver.capacity)
 }
 
 func (saver saver) resolveOverflow() {
 	switch saver.onOverflow {
 	case OnOverflowClearOldest:
-		saver.toSave = saver.toSave[1:]
+		saver.queue = saver.queue[1:]
 
 	case OnOverflowClearAll:
 		fallthrough
 	default:
-		saver.toSave = make([]howto.Howto, 0, saver.capacity)
+		saver.queue = make([]howto.Howto, 0, saver.capacity)
 	}
-}
-
-func (saver saver) poll() {
-	saver.waitAlarm()
-	saver.save()
-}
-
-func (saver saver) waitAlarm() {
-	<-saver.alarmer.Alarm()
-}
-
-func (saver saver) save() {
-	failed := saver.flusher.Flush(saver.toSave)
-	saver.toSave = append(saver.toSave, failed...)
 }
