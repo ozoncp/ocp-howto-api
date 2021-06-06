@@ -68,6 +68,7 @@ func (saver *saver) poll() {
 			saver.flush()
 		case <-saver.done:
 			saver.flush()
+			saver.close()
 			return
 		}
 	}
@@ -100,6 +101,11 @@ func (saver *saver) resolveOverflow() {
 	default:
 		saver.queue = createEmptySlice(saver.capacity)
 	}
+}
+
+func (saver *saver) close() {
+	close(saver.add)
+	close(saver.done)
 }
 
 func createEmptySlice(capacity uint) []howto.Howto {

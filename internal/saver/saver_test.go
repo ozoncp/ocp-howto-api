@@ -59,11 +59,11 @@ var _ = Describe("Saver", func() {
 		It("On overflow clears only one", func() {
 			capacity := 3
 			numSaves := 1000
-			s := saver.NewSaver(uint(capacity), saver.OnOverflowClearOldest, mockFlusher, alarm)
-			defer s.Close()
-			s.Init()
+			saver := saver.NewSaver(uint(capacity), saver.OnOverflowClearOldest, mockFlusher, alarm)
+			defer saver.Close()
+			saver.Init()
 			for i := 0; i < numSaves; i++ {
-				s.Save(toSave)
+				saver.Save(toSave)
 			}
 			waitAlarms(2)
 
@@ -74,11 +74,11 @@ var _ = Describe("Saver", func() {
 		It("On overflow clears all", func() {
 			capacity := 3
 			numSaves := 1000
-			s := saver.NewSaver(uint(capacity), saver.OnOverflowClearAll, mockFlusher, alarm)
-			defer s.Close()
-			s.Init()
+			saver := saver.NewSaver(uint(capacity), saver.OnOverflowClearAll, mockFlusher, alarm)
+			defer saver.Close()
+			saver.Init()
 			for i := 0; i < numSaves; i++ {
-				s.Save(toSave)
+				saver.Save(toSave)
 			}
 			waitAlarms(2)
 
@@ -88,6 +88,29 @@ var _ = Describe("Saver", func() {
 			}
 
 			Expect(len(saved)).Should(BeEquivalentTo(shouldSave))
+		})
+
+		It("Saves on close", func() {
+			hourAlarm := alarmer.NewPeriodAlarmer(time.Hour)
+			hourAlarm.Init()
+			defer hourAlarm.Close()
+			saver := saver.NewSaver(10, saver.OnOverflowClearAll, mockFlusher, hourAlarm)
+			saver.Init()
+			saver.Save(toSave)
+			saver.Close()
+			time.Sleep(time.Millisecond)
+			Expect(len(saved)).Should(BeNumerically(">", 0))
+		})
+
+		It("Panics if closed", func() {
+			mockFlusher.Flush(nil)
+			saver := saver.NewSaver(10, saver.OnOverflowClearAll, mockFlusher, alarm)
+			saver.Init()
+			saver.Close()
+			save := func() {
+				saver.Save(toSave)
+			}
+			Expect(save).Should(Panic())
 		})
 	})
 })
