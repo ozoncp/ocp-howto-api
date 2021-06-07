@@ -13,3 +13,9 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+vendor.protogen/
+
+*.pb.go
+*.pb.*.go
+
+*.swagger.json
