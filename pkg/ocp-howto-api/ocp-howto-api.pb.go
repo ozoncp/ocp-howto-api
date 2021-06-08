@@ -412,6 +412,7 @@ func (*RemoveHowtoV1Response) Descriptor() ([]byte, []int) {
 	return file_ocp_howto_api_proto_rawDescGZIP(), []int{7}
 }
 
+// Описание сущности howto
 type Howto struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

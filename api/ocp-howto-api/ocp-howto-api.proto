@@ -8,24 +8,28 @@ option go_package = "github.com/ozoncp/ocp-howto-api/pkg/ocp-howto-api;ocp_howto
 
 service OcpHowtoApi {
 
+    // Создает новую сущность howto и возвращает её идентификатор
     rpc CreateHowtoV1(CreateHowtoV1Request) returns (CreateHowtoV1Response){
         option (google.api.http) = {
             post: "/v1/howtos"
         };
     }
 
+    // Возвращает полное описание сущности howto по её идентификатору
     rpc DescribeHowtoV1(DescribeHowtoV1Request) returns (DescribeHowtoV1Response){
         option (google.api.http) = {
             get: "/v1/howtos/{id}"
         };
     }
 
+    // Возвращает список сущностей howto
     rpc ListHowtosV1(ListHowtosV1Request) returns (ListHowtosV1Response){
         option (google.api.http) = {
             get: "/v1/howtos"
         };
     }
 
+    // Удаляет сущность howto по её идентификатору
     rpc RemoveHowtoV1(RemoveHowtoV1Request) returns (RemoveHowtoV1Response){
         option (google.api.http) = {
             delete: "/v1/howtos/{id}"
@@ -67,6 +71,7 @@ message RemoveHowtoV1Request {
 message RemoveHowtoV1Response {
 }
 
+// Описание сущности howto
 message Howto {
     uint64 id = 1;
     uint64 course_id = 2;

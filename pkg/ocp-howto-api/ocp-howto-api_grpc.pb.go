@@ -18,9 +18,13 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type OcpHowtoApiClient interface {
+	// Создает новую сущность howto и возвращает её идентификатор
 	CreateHowtoV1(ctx context.Context, in *CreateHowtoV1Request, opts ...grpc.CallOption) (*CreateHowtoV1Response, error)
+	// Возвращает полное описание сущности howto по её идентификатору
 	DescribeHowtoV1(ctx context.Context, in *DescribeHowtoV1Request, opts ...grpc.CallOption) (*DescribeHowtoV1Response, error)
+	// Возвращает список сущностей howto
 	ListHowtosV1(ctx context.Context, in *ListHowtosV1Request, opts ...grpc.CallOption) (*ListHowtosV1Response, error)
+	// Удаляет сущность howto по её идентификатору
 	RemoveHowtoV1(ctx context.Context, in *RemoveHowtoV1Request, opts ...grpc.CallOption) (*RemoveHowtoV1Response, error)
 }
 
@@ -72,9 +76,13 @@ func (c *ocpHowtoApiClient) RemoveHowtoV1(ctx context.Context, in *RemoveHowtoV1
 // All implementations must embed UnimplementedOcpHowtoApiServer
 // for forward compatibility
 type OcpHowtoApiServer interface {
+	// Создает новую сущность howto и возвращает её идентификатор
 	CreateHowtoV1(context.Context, *CreateHowtoV1Request) (*CreateHowtoV1Response, error)
+	// Возвращает полное описание сущности howto по её идентификатору
 	DescribeHowtoV1(context.Context, *DescribeHowtoV1Request) (*DescribeHowtoV1Response, error)
+	// Возвращает список сущностей howto
 	ListHowtosV1(context.Context, *ListHowtosV1Request) (*ListHowtosV1Response, error)
+	// Удаляет сущность howto по её идентификатору
 	RemoveHowtoV1(context.Context, *RemoveHowtoV1Request) (*RemoveHowtoV1Response, error)
 	mustEmbedUnimplementedOcpHowtoApiServer()
 }
