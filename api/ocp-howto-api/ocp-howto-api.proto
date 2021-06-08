@@ -65,7 +65,6 @@ message RemoveHowtoV1Request {
 }
 
 message RemoveHowtoV1Response {
-    RemoveStatus status = 1;
 }
 
 message Howto {
@@ -73,10 +72,4 @@ message Howto {
     uint64 course_id = 2;
     string question = 3;
     string answer = 4;
-}
-
-enum RemoveStatus {
-    Success = 0;
-    NotFound = 1;
-    Failed = 2;
 }
