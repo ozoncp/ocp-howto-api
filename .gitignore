@@ -15,7 +15,4 @@
 # vendor/
 vendor.protogen/
 
-*.pb.go
-*.pb.*.go
-
 *.swagger.json
