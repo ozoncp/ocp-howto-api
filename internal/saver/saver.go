@@ -27,6 +27,7 @@ type saver struct {
 	onOverflow OnOverflow
 	alarm      <-chan struct{}
 	add        chan howto.Howto
+	close      chan struct{}
 	done       chan struct{}
 }
 
@@ -38,11 +39,12 @@ func NewSaver(
 ) Saver {
 	return &saver{
 		capacity:   capacity,
-		queue:      createEmptySlice(capacity),
+		queue:      make([]howto.Howto, 0, capacity),
 		flusher:    flusher,
 		onOverflow: onOverflow,
 		alarm:      alarmer.Alarm(),
 		add:        make(chan howto.Howto),
+		close:      make(chan struct{}),
 		done:       make(chan struct{}),
 	}
 }
@@ -56,7 +58,8 @@ func (saver *saver) Init() {
 }
 
 func (saver *saver) Close() {
-	saver.done <- struct{}{}
+	saver.close <- struct{}{}
+	<-saver.done
 }
 
 func (saver *saver) poll() {
@@ -66,9 +69,11 @@ func (saver *saver) poll() {
 			saver.addToQueue(howto)
 		case <-saver.alarm:
 			saver.flush()
-		case <-saver.done:
+		case <-saver.close:
+			close(saver.add)
+			close(saver.close)
 			saver.flush()
-			saver.close()
+			saver.done <- struct{}{}
 			return
 		}
 	}
@@ -99,15 +104,6 @@ func (saver *saver) resolveOverflow() {
 	case OnOverflowClearAll:
 		fallthrough
 	default:
-		saver.queue = createEmptySlice(saver.capacity)
+		saver.queue = saver.queue[:0]
 	}
-}
-
-func (saver *saver) close() {
-	close(saver.add)
-	close(saver.done)
-}
-
-func createEmptySlice(capacity uint) []howto.Howto {
-	return make([]howto.Howto, 0, capacity)
 }

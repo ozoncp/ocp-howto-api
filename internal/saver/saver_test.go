@@ -18,6 +18,7 @@ var _ = Describe("Saver", func() {
 		ctrl        *gomock.Controller
 		mockFlusher *mocks.MockFlusher
 		alarm       alarmer.Alarmer
+		hourAlarm   alarmer.Alarmer
 		saved       []howto.Howto
 		period      time.Duration = 200 * time.Millisecond
 		toSave      howto.Howto   = howto.Howto{}
@@ -40,23 +41,29 @@ var _ = Describe("Saver", func() {
 		ctrl = gomock.NewController(GinkgoT())
 		mockFlusher = mocks.NewMockFlusher(ctrl)
 		alarm = alarmer.NewPeriodAlarmer(period)
+		hourAlarm = alarmer.NewPeriodAlarmer(time.Hour)
 		alarm.Init()
+		hourAlarm.Init()
 		saved = make([]howto.Howto, 0)
-
-		mockFlusher.EXPECT().Flush(gomock.Any()).MinTimes(1).DoAndReturn(
-			func(howtos []howto.Howto) []howto.Howto {
-				saved = append(saved, howtos...)
-				return nil
-			})
 	})
 
 	AfterEach(func() {
+		hourAlarm.Close()
 		alarm.Close()
 		ctrl.Finish()
 	})
 
 	Context("", func() {
-		It("On overflow clears only one", func() {
+
+		BeforeEach(func() {
+			mockFlusher.EXPECT().Flush(gomock.Any()).MinTimes(1).DoAndReturn(
+				func(howtos []howto.Howto) []howto.Howto {
+					saved = append(saved, howtos...)
+					return nil
+				})
+		})
+
+		It("on overflow clears only one", func() {
 			capacity := 3
 			numSaves := 1000
 			saver := saver.NewSaver(uint(capacity), saver.OnOverflowClearOldest, mockFlusher, alarm)
@@ -71,7 +78,7 @@ var _ = Describe("Saver", func() {
 			Expect(len(saved)).Should(BeEquivalentTo(shouldSave))
 		})
 
-		It("On overflow clears all", func() {
+		It("on overflow clears all", func() {
 			capacity := 3
 			numSaves := 1000
 			saver := saver.NewSaver(uint(capacity), saver.OnOverflowClearAll, mockFlusher, alarm)
@@ -90,19 +97,15 @@ var _ = Describe("Saver", func() {
 			Expect(len(saved)).Should(BeEquivalentTo(shouldSave))
 		})
 
-		It("Saves on close", func() {
-			hourAlarm := alarmer.NewPeriodAlarmer(time.Hour)
-			hourAlarm.Init()
-			defer hourAlarm.Close()
+		It("saves on close", func() {
 			saver := saver.NewSaver(10, saver.OnOverflowClearAll, mockFlusher, hourAlarm)
 			saver.Init()
 			saver.Save(toSave)
 			saver.Close()
-			time.Sleep(time.Millisecond)
 			Expect(len(saved)).Should(BeNumerically(">", 0))
 		})
 
-		It("Panics if closed", func() {
+		It("panics if closed", func() {
 			mockFlusher.Flush(nil)
 			saver := saver.NewSaver(10, saver.OnOverflowClearAll, mockFlusher, alarm)
 			saver.Init()
@@ -111,6 +114,24 @@ var _ = Describe("Saver", func() {
 				saver.Save(toSave)
 			}
 			Expect(save).Should(Panic())
+		})
+	})
+
+	Context("Clear() blocks until flush finished", func() {
+		It("", func() {
+			finished := false
+			mockFlusher.EXPECT().Flush(gomock.Any()).MinTimes(1).DoAndReturn(
+				func(howtos []howto.Howto) []howto.Howto {
+					time.Sleep(time.Second * 3)
+					finished = true
+					return nil
+				})
+
+			saver := saver.NewSaver(1, saver.OnOverflowClearAll, mockFlusher, hourAlarm)
+			saver.Init()
+			saver.Save(toSave)
+			saver.Close()
+			Expect(finished).Should(BeEquivalentTo(true))
 		})
 	})
 })

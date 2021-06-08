@@ -12,14 +12,14 @@ type periodAlarmer struct {
 	Alarmer
 	period time.Duration
 	alarm  chan struct{}
-	done   chan struct{}
+	close  chan struct{}
 }
 
 func NewPeriodAlarmer(period time.Duration) Alarmer {
 	return &periodAlarmer{
 		period: period,
 		alarm:  make(chan struct{}),
-		done:   make(chan struct{}),
+		close:  make(chan struct{}),
 	}
 }
 
@@ -32,24 +32,27 @@ func (alarmer *periodAlarmer) Init() {
 }
 
 func (alarmer *periodAlarmer) Close() {
-	alarmer.done <- struct{}{}
+	alarmer.close <- struct{}{}
 }
 
 func (alarmer *periodAlarmer) poll() {
 	timer := time.NewTimer(alarmer.period)
 	for {
 		select {
-		case <-alarmer.done:
-			alarmer.close()
+		case <-alarmer.close:
+			close(alarmer.alarm)
+			close(alarmer.close)
 			return
 		case <-timer.C:
-			alarmer.alarm <- struct{}{}
+			alarmer.tick()
 			timer.Reset(alarmer.period)
 		}
 	}
 }
 
-func (alarmer *periodAlarmer) close() {
-	close(alarmer.alarm)
-	close(alarmer.done)
+func (alarmer *periodAlarmer) tick() {
+	select {
+	case alarmer.alarm <- struct{}{}:
+	default:
+	}
 }
