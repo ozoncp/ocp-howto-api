@@ -3,7 +3,9 @@ module github.com/ozoncp/ocp-howto-api
 go 1.16
 
 require (
+	github.com/Masterminds/squirrel v1.5.0
 	github.com/golang/mock v1.5.0
+	github.com/jmoiron/sqlx v1.3.4
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/onsi/ginkgo v1.16.3
 	github.com/onsi/gomega v1.13.0
