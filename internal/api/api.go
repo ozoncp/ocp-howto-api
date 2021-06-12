@@ -40,6 +40,7 @@ func (a *api) CreateHowtoV1(
 		Msg("Requested to create howto")
 
 	id, err := a.repo.AddHowto(
+		ctx,
 		howto.Howto{
 			CourseId: req.CourseId,
 			Question: req.Question,
@@ -62,7 +63,7 @@ func (a *api) DescribeHowtoV1(
 
 	log.Info().Uint64("Id", req.Id).Msg("Requested to describe howto")
 
-	howto, err := a.repo.DescribeHowto(req.Id)
+	howto, err := a.repo.DescribeHowto(ctx, req.Id)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to describe howto")
 		return &desc.DescribeHowtoV1Response{}, err
@@ -79,7 +80,7 @@ func (a *api) ListHowtosV1(
 
 	log.Info().Msgf("Requested to list %v howtos", req.Count)
 
-	howtos, err := a.repo.ListHowtos(req.Offset, req.Count)
+	howtos, err := a.repo.ListHowtos(ctx, req.Offset, req.Count)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to list howtos")
 		return &desc.ListHowtosV1Response{}, err
@@ -109,7 +110,7 @@ func (a *api) RemoveHowtoV1(
 
 	log.Info().Uint64("Id", req.Id).Msg("Requested to remove howto")
 
-	if err := a.repo.RemoveHowto(req.Id); err != nil {
+	if err := a.repo.RemoveHowto(ctx, req.Id); err != nil {
 		log.Error().Err(err).Msg("Failed to remove howto")
 		return &desc.RemoveHowtoV1Response{}, err
 	}

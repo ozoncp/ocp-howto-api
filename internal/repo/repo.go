@@ -14,11 +14,11 @@ import (
 var dummyHowto = howto.Howto{}
 
 type Repo interface {
-	AddHowto(howto.Howto) (uint64, error)
-	AddHowtos([]howto.Howto) error
-	RemoveHowto(id uint64) error
-	DescribeHowto(id uint64) (howto.Howto, error)
-	ListHowtos(startWith uint64, count uint64) ([]howto.Howto, error)
+	AddHowto(context.Context, howto.Howto) (uint64, error)
+	AddHowtos(context.Context, []howto.Howto) error
+	RemoveHowto(ctx context.Context, id uint64) error
+	DescribeHowto(ctx context.Context, id uint64) (howto.Howto, error)
+	ListHowtos(ctx context.Context, offset uint64, count uint64) ([]howto.Howto, error)
 }
 
 func NewRepo(db sqlx.DB) Repo {
@@ -48,7 +48,7 @@ type repo struct {
 	placeholder sqr.PlaceholderFormat
 }
 
-func (repo *repo) AddHowto(howto howto.Howto) (uint64, error) {
+func (repo *repo) AddHowto(ctx context.Context, howto howto.Howto) (uint64, error) {
 
 	cols := repo.table.columns
 	query := sqr.Insert(repo.table.name).
@@ -58,7 +58,6 @@ func (repo *repo) AddHowto(howto howto.Howto) (uint64, error) {
 		RunWith(repo.db).
 		PlaceholderFormat(repo.placeholder)
 
-	ctx := context.TODO()
 	if err := query.QueryRowContext(ctx).Scan(&howto.Id); err != nil {
 		return dummyHowto.Id, err
 	}
@@ -66,7 +65,7 @@ func (repo *repo) AddHowto(howto howto.Howto) (uint64, error) {
 	return howto.Id, nil
 }
 
-func (repo *repo) AddHowtos(howtos []howto.Howto) error {
+func (repo *repo) AddHowtos(ctx context.Context, howtos []howto.Howto) error {
 	if len(howtos) == 0 {
 		return nil
 	}
@@ -81,7 +80,6 @@ func (repo *repo) AddHowtos(howtos []howto.Howto) error {
 		query = query.Values(howto.CourseId, howto.Question, howto.Answer)
 	}
 
-	ctx := context.TODO()
 	result, err := query.ExecContext(ctx)
 	if err != nil {
 		return err
@@ -95,14 +93,13 @@ func (repo *repo) AddHowtos(howtos []howto.Howto) error {
 	return nil
 }
 
-func (repo *repo) RemoveHowto(id uint64) error {
+func (repo *repo) RemoveHowto(ctx context.Context, id uint64) error {
 
 	query := sqr.Delete(repo.table.name).
 		Where(sqr.Eq{repo.table.columns.id: id}).
 		RunWith(repo.db).
 		PlaceholderFormat(repo.placeholder)
 
-	ctx := context.TODO()
 	result, err := query.ExecContext(ctx)
 	if err != nil {
 		return err
@@ -114,7 +111,7 @@ func (repo *repo) RemoveHowto(id uint64) error {
 	return nil
 }
 
-func (repo *repo) DescribeHowto(id uint64) (howto.Howto, error) {
+func (repo *repo) DescribeHowto(ctx context.Context, id uint64) (howto.Howto, error) {
 
 	query := sqr.Select(repo.table.columns.ordered()...).
 		From(repo.table.name).
@@ -122,7 +119,6 @@ func (repo *repo) DescribeHowto(id uint64) (howto.Howto, error) {
 		RunWith(repo.db).
 		PlaceholderFormat(repo.placeholder)
 
-	ctx := context.TODO()
 	var result howto.Howto
 	if err := query.QueryRowContext(ctx).Scan(howtoRows(&result)...); err != nil {
 		return dummyHowto, err
@@ -131,7 +127,7 @@ func (repo *repo) DescribeHowto(id uint64) (howto.Howto, error) {
 	return result, nil
 }
 
-func (repo *repo) ListHowtos(startWith uint64, count uint64) ([]howto.Howto, error) {
+func (repo *repo) ListHowtos(ctx context.Context, offset uint64, count uint64) ([]howto.Howto, error) {
 
 	var result []howto.Howto
 
@@ -139,10 +135,9 @@ func (repo *repo) ListHowtos(startWith uint64, count uint64) ([]howto.Howto, err
 		From(repo.table.name).
 		RunWith(repo.db).
 		Limit(count).
-		Offset(startWith).
+		Offset(offset).
 		PlaceholderFormat(repo.placeholder)
 
-	ctx := context.TODO()
 	rows, err := query.QueryContext(ctx)
 	if err != nil {
 		return result, err
