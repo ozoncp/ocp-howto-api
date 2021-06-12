@@ -31,14 +31,14 @@
         },
         "parameters": [
           {
-            "name": "start_with_id",
+            "name": "offset",
             "in": "query",
             "required": false,
             "type": "string",
             "format": "uint64"
           },
           {
-            "name": "length",
+            "name": "count",
             "in": "query",
             "required": false,
             "type": "string",

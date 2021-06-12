@@ -329,9 +329,9 @@ func (m *ListHowtosV1Request) Validate() error {
 		return nil
 	}
 
-	// no validation rules for StartWithId
+	// no validation rules for Offset
 
-	// no validation rules for Length
+	// no validation rules for Count
 
 	return nil
 }
