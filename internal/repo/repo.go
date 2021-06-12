@@ -2,12 +2,16 @@ package repo
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/ozoncp/ocp-howto-api/internal/howto"
 
 	sqr "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 )
+
+var dummyHowto = howto.Howto{}
 
 type Repo interface {
 	AddHowto(howto.Howto) (uint64, error)
@@ -23,14 +27,18 @@ func NewRepo(db sqlx.DB) Repo {
 		table: howtoTable{
 			name: "howtos",
 			columns: howtoColumns{
-				id:        "id",
-				course_id: "course_id",
-				question:  "question",
-				answer:    "answer",
+				id:       "id",
+				courseId: "course_id",
+				question: "question",
+				answer:   "answer",
 			},
 		},
 		placeholder: sqr.Dollar,
 	}
+}
+
+func howtoRows(h *howto.Howto) []interface{} {
+	return []interface{}{&h.Id, &h.CourseId, &h.Question, &h.Answer}
 }
 
 type repo struct {
@@ -44,25 +52,28 @@ func (repo *repo) AddHowto(howto howto.Howto) (uint64, error) {
 
 	cols := repo.table.columns
 	query := sqr.Insert(repo.table.name).
-		Columns(cols.course_id, cols.question, cols.answer).
+		Columns(cols.courseId, cols.question, cols.answer).
 		Values(howto.CourseId, howto.Question, howto.Answer).
-		Suffix("RETURNING \"$\"", cols.id).
+		Suffix(fmt.Sprintf("RETURNING %v", cols.id)).
 		RunWith(repo.db).
 		PlaceholderFormat(repo.placeholder)
 
 	ctx := context.TODO()
 	if err := query.QueryRowContext(ctx).Scan(&howto.Id); err != nil {
-		return 0, err
+		return dummyHowto.Id, err
 	}
 
 	return howto.Id, nil
 }
 
 func (repo *repo) AddHowtos(howtos []howto.Howto) error {
+	if len(howtos) == 0 {
+		return nil
+	}
 
 	cols := repo.table.columns
 	query := sqr.Insert(repo.table.name).
-		Columns(cols.course_id, cols.question, cols.answer).
+		Columns(cols.courseId, cols.question, cols.answer).
 		RunWith(repo.db).
 		PlaceholderFormat(repo.placeholder)
 
@@ -71,8 +82,17 @@ func (repo *repo) AddHowtos(howtos []howto.Howto) error {
 	}
 
 	ctx := context.TODO()
-	_, err := query.ExecContext(ctx)
-	return err
+	result, err := query.ExecContext(ctx)
+	if err != nil {
+		return err
+	}
+
+	expected := int64(len(howtos))
+	if added, err := result.RowsAffected(); err == nil && added != expected {
+		return fmt.Errorf("only %v rows out of %v have been added", added, expected)
+	}
+
+	return nil
 }
 
 func (repo *repo) RemoveHowto(id uint64) error {
@@ -83,8 +103,15 @@ func (repo *repo) RemoveHowto(id uint64) error {
 		PlaceholderFormat(repo.placeholder)
 
 	ctx := context.TODO()
-	_, err := query.ExecContext(ctx)
-	return err
+	result, err := query.ExecContext(ctx)
+	if err != nil {
+		return err
+	}
+
+	if affected, err := result.RowsAffected(); err == nil && affected == 0 {
+		return errors.New("row not found")
+	}
+	return nil
 }
 
 func (repo *repo) DescribeHowto(id uint64) (howto.Howto, error) {
@@ -97,11 +124,16 @@ func (repo *repo) DescribeHowto(id uint64) (howto.Howto, error) {
 
 	ctx := context.TODO()
 	var result howto.Howto
-	err := query.QueryRowContext(ctx).Scan(&result)
-	return result, err
+	if err := query.QueryRowContext(ctx).Scan(howtoRows(&result)...); err != nil {
+		return dummyHowto, err
+	}
+
+	return result, nil
 }
 
 func (repo *repo) ListHowtos(startWith uint64, count uint64) ([]howto.Howto, error) {
+
+	var result []howto.Howto
 
 	query := sqr.Select(repo.table.columns.ordered()...).
 		From(repo.table.name).
@@ -113,18 +145,17 @@ func (repo *repo) ListHowtos(startWith uint64, count uint64) ([]howto.Howto, err
 	ctx := context.TODO()
 	rows, err := query.QueryContext(ctx)
 	if err != nil {
-		return nil, err
+		return result, err
 	}
 	defer rows.Close()
 
-	var howtos []howto.Howto
 	for rows.Next() {
 		var howto howto.Howto
-		if err := sqlx.StructScan(rows, &howto); err != nil {
+		if err := rows.Scan(howtoRows(&howto)...); err != nil {
 			continue
 		}
 
-		howtos = append(howtos, howto)
+		result = append(result, howto)
 	}
-	return howtos, nil
+	return result, nil
 }
