@@ -35,6 +35,7 @@ func (a *api) CreateHowtoV1(
 ) (*desc.CreateHowtoV1Response, error) {
 
 	log.Info().
+		Uint64("CourseId", req.CourseId).
 		Str("Q", req.Question).
 		Str("A", req.Answer).
 		Msg("Requested to create howto")
@@ -78,7 +79,7 @@ func (a *api) ListHowtosV1(
 	req *desc.ListHowtosV1Request,
 ) (*desc.ListHowtosV1Response, error) {
 
-	log.Info().Msgf("Requested to list %v howtos", req.Count)
+	log.Info().Msgf("Requested to list %v howtos starting from %v", req.Count, req.Offset)
 
 	howtos, err := a.repo.ListHowtos(ctx, req.Offset, req.Count)
 	if err != nil {
