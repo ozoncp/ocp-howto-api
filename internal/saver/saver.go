@@ -1,6 +1,8 @@
 package saver
 
 import (
+	"context"
+
 	"github.com/ozoncp/ocp-howto-api/internal/alarmer"
 	"github.com/ozoncp/ocp-howto-api/internal/flusher"
 	"github.com/ozoncp/ocp-howto-api/internal/howto"
@@ -29,9 +31,11 @@ type saver struct {
 	add        chan howto.Howto
 	close      chan struct{}
 	done       chan struct{}
+	context    context.Context
 }
 
 func NewSaver(
+	ctx context.Context,
 	capacity uint,
 	onOverflow OnOverflow,
 	flusher flusher.Flusher,
@@ -46,6 +50,7 @@ func NewSaver(
 		add:        make(chan howto.Howto),
 		close:      make(chan struct{}),
 		done:       make(chan struct{}),
+		context:    ctx,
 	}
 }
 
@@ -81,7 +86,7 @@ func (saver *saver) poll() {
 
 func (saver *saver) flush() {
 	if len(saver.queue) > 0 {
-		saver.queue = saver.flusher.Flush(saver.queue)
+		saver.queue = saver.flusher.Flush(saver.context, saver.queue)
 	}
 }
 

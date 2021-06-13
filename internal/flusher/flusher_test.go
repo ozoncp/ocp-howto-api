@@ -1,6 +1,7 @@
 package flusher_test
 
 import (
+	"context"
 	"errors"
 
 	"github.com/golang/mock/gomock"
@@ -18,6 +19,7 @@ var dummyId = uint64(0)
 var _ = Describe("Flusher", func() {
 
 	var (
+		ctx           context.Context
 		ctrl          *gomock.Controller
 		mockRepo      *mocks.MockRepo
 		f             flusher.Flusher
@@ -26,6 +28,7 @@ var _ = Describe("Flusher", func() {
 	)
 
 	BeforeEach(func() {
+		ctx = context.Background()
 		ctrl = gomock.NewController(GinkgoT())
 		mockRepo = mocks.NewMockRepo(ctrl)
 		f = flusher.New(mockRepo)
@@ -39,7 +42,7 @@ var _ = Describe("Flusher", func() {
 	})
 
 	JustBeforeEach(func() {
-		failedToFlush = f.Flush(toFlush)
+		failedToFlush = f.Flush(ctx, toFlush)
 	})
 
 	AfterEach(func() {
@@ -48,7 +51,7 @@ var _ = Describe("Flusher", func() {
 
 	Context("Flushed successfully", func() {
 		BeforeEach(func() {
-			mockRepo.EXPECT().AddHowto(gomock.Any()).Return(dummyId, nil).MinTimes(1)
+			mockRepo.EXPECT().AddHowto(ctx, gomock.Any()).Return(dummyId, nil).MinTimes(1)
 		})
 		It("", func() {
 			Expect(failedToFlush).Should(BeEmpty())
@@ -58,8 +61,8 @@ var _ = Describe("Flusher", func() {
 	Context("Flushed partially", func() {
 		succeeded := 2
 		BeforeEach(func() {
-			mockRepo.EXPECT().AddHowto(gomock.Any()).Return(dummyId, nil).Times(succeeded)
-			mockRepo.EXPECT().AddHowto(gomock.Any()).Return(dummyId, errDummy)
+			mockRepo.EXPECT().AddHowto(ctx, gomock.Any()).Return(dummyId, nil).Times(succeeded)
+			mockRepo.EXPECT().AddHowto(ctx, gomock.Any()).Return(dummyId, errDummy)
 		})
 		It("", func() {
 			Expect(len(failedToFlush)).Should(BeEquivalentTo(len(toFlush) - succeeded))
@@ -68,7 +71,7 @@ var _ = Describe("Flusher", func() {
 
 	Context("Flush failed", func() {
 		BeforeEach(func() {
-			mockRepo.EXPECT().AddHowto(gomock.Any()).Return(dummyId, errDummy)
+			mockRepo.EXPECT().AddHowto(ctx, gomock.Any()).Return(dummyId, errDummy)
 		})
 		It("", func() {
 			Expect(failedToFlush).Should(BeEquivalentTo(toFlush))
