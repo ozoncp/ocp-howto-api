@@ -17,6 +17,7 @@ var dummyHowto = howto.Howto{}
 type Repo interface {
 	AddHowto(context.Context, howto.Howto) (uint64, error)
 	AddHowtos(context.Context, []howto.Howto) (uint64, error)
+	UpdateHowto(context.Context, howto.Howto) error
 	RemoveHowto(ctx context.Context, id uint64) error
 	DescribeHowto(ctx context.Context, id uint64) (howto.Howto, error)
 	ListHowtos(ctx context.Context, offset uint64, count uint64) ([]howto.Howto, error)
@@ -108,6 +109,28 @@ func (repo *repo) insertBatch(ctx context.Context, howtos []howto.Howto) (int64,
 	}
 
 	return int64(len(howtos)), nil
+}
+
+func (repo *repo) UpdateHowto(ctx context.Context, howto howto.Howto) error {
+
+	cols := repo.table.columns
+	query := sqr.Update(repo.table.name).
+		Where(sqr.Eq{cols.id: howto.Id}).
+		Set(cols.courseId, howto.CourseId).
+		Set(cols.question, howto.Question).
+		Set(cols.answer, howto.Answer).
+		RunWith(repo.db).
+		PlaceholderFormat(repo.placeholder)
+
+	result, err := query.ExecContext(ctx)
+	if err != nil {
+		return err
+	}
+
+	if affected, err := result.RowsAffected(); err == nil && affected == 0 {
+		return errors.New("row not found")
+	}
+	return nil
 }
 
 func (repo *repo) RemoveHowto(ctx context.Context, id uint64) error {
