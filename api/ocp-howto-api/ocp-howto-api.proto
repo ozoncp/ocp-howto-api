@@ -56,8 +56,8 @@ message DescribeHowtoV1Response {
 }
 
 message ListHowtosV1Request {
-    uint64 start_with_id = 1;
-    uint64 length = 2;
+    uint64 offset = 1;
+    uint64 count = 2;
 }
 
 message ListHowtosV1Response {

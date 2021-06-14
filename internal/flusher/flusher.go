@@ -1,21 +1,23 @@
 package flusher
 
 import (
+	"context"
+
 	"github.com/ozoncp/ocp-howto-api/internal/howto"
 	"github.com/ozoncp/ocp-howto-api/internal/repo"
 )
 
 type Flusher interface {
-	Flush(howtos []howto.Howto) []howto.Howto
+	Flush(context.Context, []howto.Howto) []howto.Howto
 }
 
 type flusher struct {
 	repo repo.Repo
 }
 
-func (f *flusher) Flush(howtos []howto.Howto) []howto.Howto {
+func (f *flusher) Flush(ctx context.Context, howtos []howto.Howto) []howto.Howto {
 	for i, howto := range howtos {
-		if _, err := f.repo.AddHowto(howto); err != nil {
+		if _, err := f.repo.AddHowto(ctx, howto); err != nil {
 			return howtos[i:]
 		}
 	}
