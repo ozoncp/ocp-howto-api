@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/ozoncp/ocp-howto-api/internal/howto"
+	"github.com/ozoncp/ocp-howto-api/internal/utils"
 
 	sqr "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
@@ -15,7 +16,7 @@ var dummyHowto = howto.Howto{}
 
 type Repo interface {
 	AddHowto(context.Context, howto.Howto) (uint64, error)
-	AddHowtos(context.Context, []howto.Howto) error
+	AddHowtos(context.Context, []howto.Howto) (uint64, error)
 	RemoveHowto(ctx context.Context, id uint64) error
 	DescribeHowto(ctx context.Context, id uint64) (howto.Howto, error)
 	ListHowtos(ctx context.Context, offset uint64, count uint64) ([]howto.Howto, error)
@@ -34,6 +35,7 @@ func NewRepo(db sqlx.DB) Repo {
 			},
 		},
 		placeholder: sqr.Dollar,
+		batchSize:   2,
 	}
 }
 
@@ -46,6 +48,7 @@ type repo struct {
 	db          sqlx.DB
 	table       howtoTable
 	placeholder sqr.PlaceholderFormat
+	batchSize   int
 }
 
 func (repo *repo) AddHowto(ctx context.Context, howto howto.Howto) (uint64, error) {
@@ -65,10 +68,25 @@ func (repo *repo) AddHowto(ctx context.Context, howto howto.Howto) (uint64, erro
 	return howto.Id, nil
 }
 
-func (repo *repo) AddHowtos(ctx context.Context, howtos []howto.Howto) error {
+func (repo *repo) AddHowtos(ctx context.Context, howtos []howto.Howto) (uint64, error) {
 	if len(howtos) == 0 {
-		return nil
+		return 0, nil
 	}
+
+	added := uint64(0)
+	batches := utils.SplitToBulks(howtos, repo.batchSize)
+	for _, batch := range batches {
+		inserted, err := repo.insertBatch(ctx, batch)
+		added += uint64(inserted)
+		if err != nil {
+			return added, err
+		}
+	}
+
+	return added, nil
+}
+
+func (repo *repo) insertBatch(ctx context.Context, howtos []howto.Howto) (int64, error) {
 
 	cols := repo.table.columns
 	query := sqr.Insert(repo.table.name).
@@ -82,15 +100,14 @@ func (repo *repo) AddHowtos(ctx context.Context, howtos []howto.Howto) error {
 
 	result, err := query.ExecContext(ctx)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	expected := int64(len(howtos))
-	if added, err := result.RowsAffected(); err == nil && added != expected {
-		return fmt.Errorf("only %v rows out of %v have been added", added, expected)
+	if added, err := result.RowsAffected(); err == nil {
+		return added, nil
 	}
 
-	return nil
+	return int64(len(howtos)), nil
 }
 
 func (repo *repo) RemoveHowto(ctx context.Context, id uint64) error {
