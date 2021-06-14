@@ -13,6 +13,10 @@ require (
 	github.com/onsi/gomega v1.13.0
 	github.com/ozoncp/ocp-howto-api/pkg/ocp-howto-api v0.0.0-00010101000000-000000000000
 	github.com/rs/zerolog v1.22.0
+	github.com/stretchr/testify v1.6.1 // indirect
+	golang.org/x/net v0.0.0-20210610132358-84b48f89b13b // indirect
+	golang.org/x/sys v0.0.0-20210611083646-a4fc73990273 // indirect
+	google.golang.org/genproto v0.0.0-20210614143202-012ab6975634 // indirect
 	google.golang.org/grpc v1.38.0
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 )
