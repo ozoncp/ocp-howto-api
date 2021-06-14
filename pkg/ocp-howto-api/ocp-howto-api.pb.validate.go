@@ -175,6 +175,301 @@ var _ interface {
 	ErrorName() string
 } = CreateHowtoV1ResponseValidationError{}
 
+// Validate checks the field values on MultiCreateHowtoV1Request with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *MultiCreateHowtoV1Request) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	for idx, item := range m.GetHowtos() {
+		_, _ = idx, item
+
+		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MultiCreateHowtoV1RequestValidationError{
+					field:  fmt.Sprintf("Howtos[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	return nil
+}
+
+// MultiCreateHowtoV1RequestValidationError is the validation error returned by
+// MultiCreateHowtoV1Request.Validate if the designated constraints aren't met.
+type MultiCreateHowtoV1RequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MultiCreateHowtoV1RequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MultiCreateHowtoV1RequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MultiCreateHowtoV1RequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MultiCreateHowtoV1RequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MultiCreateHowtoV1RequestValidationError) ErrorName() string {
+	return "MultiCreateHowtoV1RequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MultiCreateHowtoV1RequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMultiCreateHowtoV1Request.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MultiCreateHowtoV1RequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MultiCreateHowtoV1RequestValidationError{}
+
+// Validate checks the field values on MultiCreateHowtoV1Response with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *MultiCreateHowtoV1Response) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	// no validation rules for Added
+
+	return nil
+}
+
+// MultiCreateHowtoV1ResponseValidationError is the validation error returned
+// by MultiCreateHowtoV1Response.Validate if the designated constraints aren't met.
+type MultiCreateHowtoV1ResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MultiCreateHowtoV1ResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MultiCreateHowtoV1ResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MultiCreateHowtoV1ResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MultiCreateHowtoV1ResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MultiCreateHowtoV1ResponseValidationError) ErrorName() string {
+	return "MultiCreateHowtoV1ResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MultiCreateHowtoV1ResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMultiCreateHowtoV1Response.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MultiCreateHowtoV1ResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MultiCreateHowtoV1ResponseValidationError{}
+
+// Validate checks the field values on UpdateHowtoV1Request with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *UpdateHowtoV1Request) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if v, ok := interface{}(m.GetHowto()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return UpdateHowtoV1RequestValidationError{
+				field:  "Howto",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	return nil
+}
+
+// UpdateHowtoV1RequestValidationError is the validation error returned by
+// UpdateHowtoV1Request.Validate if the designated constraints aren't met.
+type UpdateHowtoV1RequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UpdateHowtoV1RequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UpdateHowtoV1RequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UpdateHowtoV1RequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UpdateHowtoV1RequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UpdateHowtoV1RequestValidationError) ErrorName() string {
+	return "UpdateHowtoV1RequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UpdateHowtoV1RequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUpdateHowtoV1Request.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UpdateHowtoV1RequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UpdateHowtoV1RequestValidationError{}
+
+// Validate checks the field values on UpdateHowtoV1Response with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *UpdateHowtoV1Response) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	return nil
+}
+
+// UpdateHowtoV1ResponseValidationError is the validation error returned by
+// UpdateHowtoV1Response.Validate if the designated constraints aren't met.
+type UpdateHowtoV1ResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UpdateHowtoV1ResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UpdateHowtoV1ResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UpdateHowtoV1ResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UpdateHowtoV1ResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UpdateHowtoV1ResponseValidationError) ErrorName() string {
+	return "UpdateHowtoV1ResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UpdateHowtoV1ResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUpdateHowtoV1Response.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UpdateHowtoV1ResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UpdateHowtoV1ResponseValidationError{}
+
 // Validate checks the field values on DescribeHowtoV1Request with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, an error is returned.

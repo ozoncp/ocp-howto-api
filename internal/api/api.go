@@ -20,12 +20,21 @@ func NewOcpHowtoApi(repo repo.Repo) desc.OcpHowtoApiServer {
 	}
 }
 
-func toMessage(howto howto.Howto) *desc.Howto {
+func toMessage(h howto.Howto) *desc.Howto {
 	return &desc.Howto{
-		Id:       howto.Id,
-		CourseId: howto.CourseId,
-		Question: howto.Question,
-		Answer:   howto.Answer,
+		Id:       h.Id,
+		CourseId: h.CourseId,
+		Question: h.Question,
+		Answer:   h.Answer,
+	}
+}
+
+func fromMessage(h *desc.Howto) howto.Howto {
+	return howto.Howto{
+		Id:       h.Id,
+		CourseId: h.CourseId,
+		Question: h.Question,
+		Answer:   h.Answer,
 	}
 }
 
@@ -55,6 +64,56 @@ func (a *api) CreateHowtoV1(
 
 	log.Info().Uint64("Id", id).Msg("Howto created successfully")
 	return &desc.CreateHowtoV1Response{Id: id}, nil
+}
+
+func (a *api) MultiCreateHowtoV1(
+	ctx context.Context,
+	req *desc.MultiCreateHowtoV1Request,
+) (*desc.MultiCreateHowtoV1Response, error) {
+
+	log.Info().Msgf("Requested to create %v howtos", len(req.Howtos))
+
+	var howtos []howto.Howto
+	for _, h := range req.Howtos {
+		howtos = append(howtos, fromMessage(h))
+	}
+
+	added, err := a.repo.AddHowtos(ctx, howtos)
+
+	if err != nil {
+		log.Error().
+			Err(err).
+			Msgf("Error occurred when creating howtos. %v actually was added", added)
+		return &desc.MultiCreateHowtoV1Response{}, err
+	}
+
+	log.Info().Msgf("%v howtos created successfully", added)
+
+	expected := uint64(len(req.Howtos))
+	if added != expected {
+		log.Warn().
+			Uint64("expected", expected).
+			Uint64("added", added).
+			Msg("Number of added howtos does not match requested number")
+	}
+
+	return &desc.MultiCreateHowtoV1Response{Added: added}, nil
+}
+
+func (a *api) UpdateHowtoV1(
+	ctx context.Context,
+	req *desc.UpdateHowtoV1Request,
+) (*desc.UpdateHowtoV1Response, error) {
+
+	log.Info().Uint64("Id", req.Howto.Id).Msg("Requested to update howto")
+
+	if err := a.repo.UpdateHowto(ctx, fromMessage(req.Howto)); err != nil {
+		log.Error().Err(err).Msg("Failed to update howto")
+		return &desc.UpdateHowtoV1Response{}, err
+	}
+
+	log.Info().Msg("Howto updated successfully")
+	return &desc.UpdateHowtoV1Response{}, nil
 }
 
 func (a *api) DescribeHowtoV1(

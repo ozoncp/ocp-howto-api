@@ -17,7 +17,7 @@ import (
 const (
 	grpcPort = 82
 	dbDriver = "postgres"
-	dbDsn    = "user=tiger password=scott dbname=postgres sslmode=disable"
+	dbDsn    = "user=postgres password=postgres dbname=postgres sslmode=disable"
 )
 
 func runGrpc(port int) error {
