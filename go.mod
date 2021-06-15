@@ -12,6 +12,7 @@ require (
 	github.com/onsi/ginkgo v1.16.3
 	github.com/onsi/gomega v1.13.0
 	github.com/ozoncp/ocp-howto-api/pkg/ocp-howto-api v0.0.0-00010101000000-000000000000
+	github.com/prometheus/client_golang v1.11.0
 	github.com/rs/zerolog v1.22.0
 	golang.org/x/net v0.0.0-20210610132358-84b48f89b13b // indirect
 	golang.org/x/sys v0.0.0-20210611083646-a4fc73990273 // indirect
