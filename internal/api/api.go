@@ -5,6 +5,7 @@ import (
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/ozoncp/ocp-howto-api/internal/howto"
+	"github.com/ozoncp/ocp-howto-api/internal/metrics"
 	"github.com/ozoncp/ocp-howto-api/internal/repo"
 	desc "github.com/ozoncp/ocp-howto-api/pkg/ocp-howto-api"
 	log "github.com/rs/zerolog/log"
@@ -64,6 +65,7 @@ func (a *api) CreateHowtoV1(
 	}
 
 	log.Info().Uint64("Id", id).Msg("Howto created successfully")
+	metrics.IncrementCreates(1)
 	return &desc.CreateHowtoV1Response{Id: id}, nil
 }
 
@@ -92,6 +94,7 @@ func (a *api) MultiCreateHowtoV1(
 	}
 
 	log.Info().Msgf("%v howtos created successfully", added)
+	metrics.IncrementCreates(added)
 
 	expected := uint64(len(req.Howtos))
 	if added != expected {
@@ -117,6 +120,7 @@ func (a *api) UpdateHowtoV1(
 	}
 
 	log.Info().Msg("Howto updated successfully")
+	metrics.IncrementUpdates(1)
 	return &desc.UpdateHowtoV1Response{}, nil
 }
 
@@ -180,5 +184,6 @@ func (a *api) RemoveHowtoV1(
 	}
 
 	log.Info().Msg("Howto removed successfully")
+	metrics.IncrementRemoves(1)
 	return &desc.RemoveHowtoV1Response{}, nil
 }
