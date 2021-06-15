@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/opentracing/opentracing-go"
 	"github.com/ozoncp/ocp-howto-api/internal/howto"
 	"github.com/ozoncp/ocp-howto-api/internal/utils"
 
@@ -70,6 +71,10 @@ func (repo *repo) AddHowto(ctx context.Context, howto howto.Howto) (uint64, erro
 }
 
 func (repo *repo) AddHowtos(ctx context.Context, howtos []howto.Howto) (uint64, error) {
+
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Add howtos")
+	defer span.Finish()
+
 	if len(howtos) == 0 {
 		return 0, nil
 	}
@@ -88,6 +93,9 @@ func (repo *repo) AddHowtos(ctx context.Context, howtos []howto.Howto) (uint64, 
 }
 
 func (repo *repo) insertBatch(ctx context.Context, howtos []howto.Howto) (int64, error) {
+
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Insert howtos batch")
+	defer span.Finish()
 
 	cols := repo.table.columns
 	query := sqr.Insert(repo.table.name).

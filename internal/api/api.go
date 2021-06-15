@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 
+	"github.com/opentracing/opentracing-go"
 	"github.com/ozoncp/ocp-howto-api/internal/howto"
 	"github.com/ozoncp/ocp-howto-api/internal/repo"
 	desc "github.com/ozoncp/ocp-howto-api/pkg/ocp-howto-api"
@@ -70,6 +71,9 @@ func (a *api) MultiCreateHowtoV1(
 	ctx context.Context,
 	req *desc.MultiCreateHowtoV1Request,
 ) (*desc.MultiCreateHowtoV1Response, error) {
+
+	span, ctx := opentracing.StartSpanFromContext(ctx, "MultiCreateHowto")
+	defer span.Finish()
 
 	log.Info().Msgf("Requested to create %v howtos", len(req.Howtos))
 
