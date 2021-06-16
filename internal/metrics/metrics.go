@@ -14,7 +14,7 @@ func Register() {
 	counters = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "howto_actions",
-			Help: "Number of howto CUD actions",
+			Help: "Number of howto CUD actions successfully performed.",
 		},
 		[]string{label},
 	)
