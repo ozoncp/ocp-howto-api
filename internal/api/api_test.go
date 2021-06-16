@@ -3,6 +3,7 @@ package api_test
 import (
 	"context"
 	"database/sql"
+	"database/sql/driver"
 	"errors"
 	"fmt"
 
@@ -36,7 +37,7 @@ var _ = Describe("Api", func() {
 		ctx = context.Background()
 		db, mock, _ = sqlmock.New()
 		dbx = sqlx.NewDb(db, "sqlmock")
-		server = api.NewOcpHowtoApi(repo.NewRepo(*dbx, 2))
+		server = api.NewOcpHowtoApi(repo.NewRepo(*dbx, 10))
 	})
 
 	AfterEach(func() {
@@ -78,6 +79,91 @@ var _ = Describe("Api", func() {
 			query.WillReturnError(errors.New(""))
 			response, err = server.CreateHowtoV1(ctx, request)
 			Expect(response.Id).Should(BeEquivalentTo(dummyId))
+			Expect(err).ShouldNot(BeNil())
+		})
+	})
+
+	Context("MultiCreate", func() {
+
+		var (
+			request  *desc.MultiCreateHowtoV1Request
+			response *desc.MultiCreateHowtoV1Response
+			exec     *sqlmock.ExpectedExec
+			err      error
+		)
+
+		BeforeEach(func() {
+			request = &desc.MultiCreateHowtoV1Request{
+				Howtos: []*desc.Howto{{}, {}, {}},
+			}
+			args := []driver.Value{}
+			for i := 0; i < len(request.Howtos); i++ {
+				h := request.Howtos[i]
+				args = append(args, h.CourseId, h.Question, h.Answer)
+			}
+			exec = mock.ExpectExec(fmt.Sprintf("INSERT INTO %v", tableName)).WithArgs(args...)
+		})
+
+		It("successfully", func() {
+			exec.WillReturnResult(sqlmock.NewResult(dummyId, int64(len(request.Howtos))))
+			response, err = server.MultiCreateHowtoV1(ctx, request)
+			Expect(response.Added).Should(BeEquivalentTo(len(request.Howtos)))
+			Expect(err).Should(BeNil())
+		})
+
+		It("partially", func() {
+			added := int64(1)
+			exec.WillReturnResult(sqlmock.NewResult(dummyId, added))
+			response, err = server.MultiCreateHowtoV1(ctx, request)
+			Expect(response.Added).Should(BeEquivalentTo(added))
+			Expect(err).Should(BeNil())
+		})
+
+		It("failed", func() {
+			exec.WillReturnError(errors.New(""))
+			response, err = server.MultiCreateHowtoV1(ctx, request)
+			Expect(err).ShouldNot(BeNil())
+		})
+	})
+
+	Context("Update", func() {
+
+		var (
+			request  *desc.UpdateHowtoV1Request
+			exec     *sqlmock.ExpectedExec
+			affected int64
+			err      error
+		)
+
+		BeforeEach(func() {
+			h := desc.Howto{
+				Id:       12,
+				CourseId: 42,
+				Question: "Question",
+				Answer:   "Answer",
+			}
+			request = &desc.UpdateHowtoV1Request{Howto: &h}
+			exec = mock.ExpectExec(fmt.Sprintf("UPDATE %v", tableName)).
+				WithArgs(h.CourseId, h.Question, h.Answer, h.Id)
+		})
+
+		It("successfully", func() {
+			affected = 1
+			exec.WillReturnResult(sqlmock.NewResult(dummyId, affected))
+			_, err = server.UpdateHowtoV1(ctx, request)
+			Expect(err).Should(BeNil())
+		})
+
+		It("not found", func() {
+			affected = 0
+			exec.WillReturnResult(sqlmock.NewResult(dummyId, affected))
+			_, err = server.UpdateHowtoV1(ctx, request)
+			Expect(err).ShouldNot(BeNil())
+		})
+
+		It("failed", func() {
+			exec.WillReturnError(errors.New(""))
+			_, err = server.UpdateHowtoV1(ctx, request)
 			Expect(err).ShouldNot(BeNil())
 		})
 	})
