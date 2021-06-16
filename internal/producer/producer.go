@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/Shopify/sarama"
+	log "github.com/rs/zerolog/log"
 )
 
 type EventType = uint64
@@ -102,5 +103,8 @@ func (p *producer) send(event Event) {
 		Partition: -1,
 		Value:     sarama.StringEncoder(json),
 	}
-	p.prod.SendMessage(&message)
+	_, _, err = p.prod.SendMessage(&message)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to send message")
+	}
 }
