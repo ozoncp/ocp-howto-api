@@ -72,7 +72,8 @@ func (repo *repo) AddHowto(ctx context.Context, howto howto.Howto) (uint64, erro
 
 func (repo *repo) AddHowtos(ctx context.Context, howtos []howto.Howto) (uint64, error) {
 
-	span, ctx := opentracing.StartSpanFromContext(ctx, "Add howtos")
+	opName := fmt.Sprintf("Add %v howtos", len(howtos))
+	span, ctx := opentracing.StartSpanFromContext(ctx, opName)
 	defer span.Finish()
 
 	if len(howtos) == 0 {
@@ -94,7 +95,8 @@ func (repo *repo) AddHowtos(ctx context.Context, howtos []howto.Howto) (uint64, 
 
 func (repo *repo) insertBatch(ctx context.Context, howtos []howto.Howto) (int64, error) {
 
-	span, ctx := opentracing.StartSpanFromContext(ctx, "Insert howtos batch")
+	opName := fmt.Sprintf("Insert batch with %v howtos", len(howtos))
+	span, ctx := opentracing.StartSpanFromContext(ctx, opName)
 	defer span.Finish()
 
 	cols := repo.table.columns

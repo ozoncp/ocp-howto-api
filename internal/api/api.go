@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/ozoncp/ocp-howto-api/internal/howto"
@@ -74,7 +75,8 @@ func (a *api) MultiCreateHowtoV1(
 	req *desc.MultiCreateHowtoV1Request,
 ) (*desc.MultiCreateHowtoV1Response, error) {
 
-	span, ctx := opentracing.StartSpanFromContext(ctx, "MultiCreateHowto")
+	opName := fmt.Sprintf("Create %v howtos", len(req.Howtos))
+	span, ctx := opentracing.StartSpanFromContext(ctx, opName)
 	defer span.Finish()
 
 	log.Info().Msgf("Requested to create %v howtos", len(req.Howtos))
