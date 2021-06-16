@@ -51,11 +51,12 @@ func (mr *MockRepoMockRecorder) AddHowto(arg0, arg1 interface{}) *gomock.Call {
 }
 
 // AddHowtos mocks base method.
-func (m *MockRepo) AddHowtos(arg0 context.Context, arg1 []howto.Howto) error {
+func (m *MockRepo) AddHowtos(arg0 context.Context, arg1 []howto.Howto) (uint64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddHowtos", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // AddHowtos indicates an expected call of AddHowtos.
@@ -106,4 +107,18 @@ func (m *MockRepo) RemoveHowto(arg0 context.Context, arg1 uint64) error {
 func (mr *MockRepoMockRecorder) RemoveHowto(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveHowto", reflect.TypeOf((*MockRepo)(nil).RemoveHowto), arg0, arg1)
+}
+
+// UpdateHowto mocks base method.
+func (m *MockRepo) UpdateHowto(arg0 context.Context, arg1 howto.Howto) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateHowto", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateHowto indicates an expected call of UpdateHowto.
+func (mr *MockRepoMockRecorder) UpdateHowto(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateHowto", reflect.TypeOf((*MockRepo)(nil).UpdateHowto), arg0, arg1)
 }
