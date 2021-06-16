@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/golang/mock/gomock"
 	"github.com/jmoiron/sqlx"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -16,6 +17,8 @@ import (
 	"github.com/ozoncp/ocp-howto-api/internal/repo"
 
 	desc "github.com/ozoncp/ocp-howto-api/pkg/ocp-howto-api"
+
+	"github.com/ozoncp/ocp-howto-api/internal/mocks"
 )
 
 var _ = Describe("Api", func() {
@@ -31,18 +34,23 @@ var _ = Describe("Api", func() {
 		dbx    *sqlx.DB
 		mock   sqlmock.Sqlmock
 		server desc.OcpHowtoApiServer
+		ctrl   *gomock.Controller
+		prod   *mocks.MockProducer
 	)
 
 	BeforeEach(func() {
 		ctx = context.Background()
+		ctrl = gomock.NewController(GinkgoT())
+		prod = mocks.NewMockProducer(ctrl)
 		db, mock, _ = sqlmock.New()
 		dbx = sqlx.NewDb(db, "sqlmock")
-		server = api.NewOcpHowtoApi(repo.NewRepo(*dbx, 10))
+		server = api.NewOcpHowtoApi(repo.NewRepo(*dbx, 10), prod)
 	})
 
 	AfterEach(func() {
 		db.Close()
 		dbx.Close()
+		ctrl.Finish()
 	})
 
 	Context("Create", func() {
@@ -69,6 +77,7 @@ var _ = Describe("Api", func() {
 		})
 
 		It("successfully", func() {
+			prod.EXPECT().SendEvent(gomock.Any()).Times(1)
 			query.WillReturnRows(rows.AddRow(id))
 			response, err = server.CreateHowtoV1(ctx, request)
 			Expect(response.Id).Should(BeEquivalentTo(id))
@@ -102,6 +111,7 @@ var _ = Describe("Api", func() {
 				args = append(args, h.CourseId, h.Question, h.Answer)
 			}
 			exec = mock.ExpectExec(fmt.Sprintf("INSERT INTO %v", tableName)).WithArgs(args...)
+			prod.EXPECT().SendEvent(gomock.Any()).Times(1)
 		})
 
 		It("successfully", func() {
@@ -148,6 +158,7 @@ var _ = Describe("Api", func() {
 		})
 
 		It("successfully", func() {
+			prod.EXPECT().SendEvent(gomock.Any()).Times(1)
 			affected = 1
 			exec.WillReturnResult(sqlmock.NewResult(dummyId, affected))
 			_, err = server.UpdateHowtoV1(ctx, request)
@@ -184,6 +195,7 @@ var _ = Describe("Api", func() {
 		})
 
 		It("successfully", func() {
+			prod.EXPECT().SendEvent(gomock.Any()).Times(1)
 			affected = 1
 			exec.WillReturnResult(sqlmock.NewResult(dummyId, affected))
 			_, err = server.RemoveHowtoV1(ctx, request)

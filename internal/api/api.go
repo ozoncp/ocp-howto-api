@@ -3,10 +3,12 @@ package api
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/ozoncp/ocp-howto-api/internal/howto"
 	"github.com/ozoncp/ocp-howto-api/internal/metrics"
+	"github.com/ozoncp/ocp-howto-api/internal/producer"
 	"github.com/ozoncp/ocp-howto-api/internal/repo"
 	desc "github.com/ozoncp/ocp-howto-api/pkg/ocp-howto-api"
 	log "github.com/rs/zerolog/log"
@@ -15,11 +17,16 @@ import (
 type api struct {
 	desc.UnimplementedOcpHowtoApiServer
 	repo repo.Repo
+	prod producer.Producer
 }
 
-func NewOcpHowtoApi(repo repo.Repo) desc.OcpHowtoApiServer {
+func NewOcpHowtoApi(
+	repo repo.Repo,
+	prod producer.Producer,
+) desc.OcpHowtoApiServer {
 	return &api{
 		repo: repo,
+		prod: prod,
 	}
 }
 
@@ -67,6 +74,16 @@ func (a *api) CreateHowtoV1(
 
 	log.Info().Uint64("Id", id).Msg("Howto created successfully")
 	metrics.IncrementCreates(1)
+
+	event := producer.Event{
+		Type: producer.EventTypeCreated,
+		Body: map[string]interface{}{
+			"Id":        id,
+			"Timestamp": time.Now(),
+		},
+	}
+	a.prod.SendEvent(event)
+
 	return &desc.CreateHowtoV1Response{Id: id}, nil
 }
 
@@ -87,16 +104,25 @@ func (a *api) MultiCreateHowtoV1(
 	}
 
 	added, err := a.repo.AddHowtos(ctx, howtos)
+	metrics.IncrementCreates(added)
+
+	event := producer.Event{
+		Type: producer.EventTypeCreated,
+		Body: map[string]interface{}{
+			"Count":     added,
+			"Timestamp": time.Now(),
+		},
+	}
+	a.prod.SendEvent(event)
 
 	if err != nil {
 		log.Error().
 			Err(err).
 			Msgf("Error occurred when creating howtos. %v actually was added", added)
-		return &desc.MultiCreateHowtoV1Response{}, err
+		return &desc.MultiCreateHowtoV1Response{Added: added}, err
 	}
 
 	log.Info().Msgf("%v howtos created successfully", added)
-	metrics.IncrementCreates(added)
 
 	expected := uint64(len(req.Howtos))
 	if added != expected {
@@ -123,6 +149,16 @@ func (a *api) UpdateHowtoV1(
 
 	log.Info().Msg("Howto updated successfully")
 	metrics.IncrementUpdates(1)
+
+	event := producer.Event{
+		Type: producer.EventTypeUpdated,
+		Body: map[string]interface{}{
+			"Id":        req.Howto.Id,
+			"Timestamp": time.Now(),
+		},
+	}
+	a.prod.SendEvent(event)
+
 	return &desc.UpdateHowtoV1Response{}, nil
 }
 
@@ -187,5 +223,15 @@ func (a *api) RemoveHowtoV1(
 
 	log.Info().Msg("Howto removed successfully")
 	metrics.IncrementRemoves(1)
+
+	event := producer.Event{
+		Type: producer.EventTypeRemoved,
+		Body: map[string]interface{}{
+			"Id":        req.Id,
+			"Timestamp": time.Now(),
+		},
+	}
+	a.prod.SendEvent(event)
+
 	return &desc.RemoveHowtoV1Response{}, nil
 }

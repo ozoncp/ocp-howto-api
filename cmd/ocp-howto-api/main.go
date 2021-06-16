@@ -9,6 +9,7 @@ import (
 	_ "github.com/lib/pq"
 	api "github.com/ozoncp/ocp-howto-api/internal/api"
 	"github.com/ozoncp/ocp-howto-api/internal/metrics"
+	"github.com/ozoncp/ocp-howto-api/internal/producer"
 	"github.com/ozoncp/ocp-howto-api/internal/repo"
 	desc "github.com/ozoncp/ocp-howto-api/pkg/ocp-howto-api"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -20,6 +21,8 @@ import (
 const (
 	grpcAddress    = ":82"
 	metricsAddress = ":9100"
+	kafkaAddress   = ":9092"
+	kafkaTopic     = "howto"
 	dbDriver       = "postgres"
 	dbDsn          = "user=postgres password=postgres dbname=postgres sslmode=disable"
 )
@@ -48,9 +51,16 @@ func runGrpc() error {
 	}
 	defer db.Close()
 
+	prod, err := producer.New(kafkaAddress, kafkaTopic, 100)
+	if err != nil {
+		return err
+	}
+	prod.Init()
+	defer prod.Close()
+
 	server := grpc.NewServer()
 	reflection.Register(server)
-	api := api.NewOcpHowtoApi(repo.NewRepo(*db, 10))
+	api := api.NewOcpHowtoApi(repo.NewRepo(*db, 10), prod)
 	desc.RegisterOcpHowtoApiServer(server, api)
 	if err := server.Serve(listener); err != nil {
 		return fmt.Errorf("failed to serve server: %v", err)
