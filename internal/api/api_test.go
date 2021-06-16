@@ -36,7 +36,7 @@ var _ = Describe("Api", func() {
 		ctx = context.Background()
 		db, mock, _ = sqlmock.New()
 		dbx = sqlx.NewDb(db, "sqlmock")
-		server = api.NewOcpHowtoApi(repo.NewRepo(*dbx))
+		server = api.NewOcpHowtoApi(repo.NewRepo(*dbx, 2))
 	})
 
 	AfterEach(func() {

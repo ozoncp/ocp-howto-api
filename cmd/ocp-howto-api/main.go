@@ -50,7 +50,7 @@ func runGrpc() error {
 
 	server := grpc.NewServer()
 	reflection.Register(server)
-	api := api.NewOcpHowtoApi(repo.NewRepo(*db))
+	api := api.NewOcpHowtoApi(repo.NewRepo(*db, 10))
 	desc.RegisterOcpHowtoApiServer(server, api)
 	if err := server.Serve(listener); err != nil {
 		return fmt.Errorf("failed to serve server: %v", err)

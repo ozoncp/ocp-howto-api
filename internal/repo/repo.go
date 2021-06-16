@@ -24,7 +24,7 @@ type Repo interface {
 	ListHowtos(ctx context.Context, offset uint64, count uint64) ([]howto.Howto, error)
 }
 
-func NewRepo(db sqlx.DB) Repo {
+func NewRepo(db sqlx.DB, batchSize int) Repo {
 	return &repo{
 		db: db,
 		table: howtoTable{
@@ -37,7 +37,7 @@ func NewRepo(db sqlx.DB) Repo {
 			},
 		},
 		placeholder: sqr.Dollar,
-		batchSize:   2,
+		batchSize:   batchSize,
 	}
 }
 
