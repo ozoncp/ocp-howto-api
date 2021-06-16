@@ -8,6 +8,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	api "github.com/ozoncp/ocp-howto-api/internal/api"
+	"github.com/ozoncp/ocp-howto-api/internal/config"
 	"github.com/ozoncp/ocp-howto-api/internal/metrics"
 	"github.com/ozoncp/ocp-howto-api/internal/producer"
 	"github.com/ozoncp/ocp-howto-api/internal/repo"
@@ -18,20 +19,13 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
-const (
-	grpcAddress    = ":82"
-	metricsAddress = ":9100"
-	kafkaAddress   = ":9092"
-	kafkaTopic     = "howto"
-	dbDriver       = "postgres"
-	dbDsn          = "user=postgres password=postgres dbname=postgres sslmode=disable"
-)
+var cfg *config.Config
 
 func runMetrics() {
 	metrics.Register()
-	http.Handle("/metrics", promhttp.Handler())
+	http.Handle(cfg.Metrics.Pattern, promhttp.Handler())
 	go func() {
-		err := http.ListenAndServe(metricsAddress, nil)
+		err := http.ListenAndServe(cfg.Metrics.Address, nil)
 		if err != nil {
 			panic(err)
 		}
@@ -40,18 +34,22 @@ func runMetrics() {
 
 func runGrpc() error {
 
-	listener, err := net.Listen("tcp", grpcAddress)
+	listener, err := net.Listen("tcp", cfg.Grpc.Address)
 	if err != nil {
 		return fmt.Errorf("failed to start listening: %v", err)
 	}
 
-	db, err := sqlx.Connect(dbDriver, dbDsn)
+	dbCfg := &cfg.Database
+	dsn := fmt.Sprintf("user=%v password=%v dbname=%v port=%v sslmode=%v",
+		dbCfg.User, dbCfg.Password, dbCfg.Database, dbCfg.Port, dbCfg.SslMode)
+
+	db, err := sqlx.Connect(dbCfg.Driver, dsn)
 	if err != nil {
 		return err
 	}
 	defer db.Close()
 
-	prod, err := producer.New(kafkaAddress, kafkaTopic, 100)
+	prod, err := producer.New(cfg.Kafka.Brokers[0], cfg.Kafka.Topic, 100)
 	if err != nil {
 		return err
 	}
@@ -70,9 +68,16 @@ func runGrpc() error {
 }
 
 func main() {
-	fmt.Println("Howto API. Author: Ivan Levin")
-	runMetrics()
+	var err error
+	cfg, err = config.Read("config.yml")
+	if err != nil {
+		log.Fatal().Msgf("failed to open configuration file: %v", err)
+		return
+	}
 
+	fmt.Printf("%v. Author: %v", cfg.Project.Name, cfg.Project.Author)
+
+	runMetrics()
 	if err := runGrpc(); err != nil {
 		log.Fatal().Msgf("failed to start GRPC server: %v", err)
 	}

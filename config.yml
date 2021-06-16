@@ -1,0 +1,23 @@
+project: 
+  name : "Howto API"
+  author: "Ivan Levin"
+
+grpc:
+  address: ":82"
+
+database :
+  driver : "postgres"
+  port : "5432"
+  user : ""
+  password : ""
+  database : ""
+  sslmode : "disable"
+
+metrics :
+  address : ":9100"
+  pattern : "/metrics"
+
+kafka:
+  topic : "howto"
+  brokers:
+  - ":9092"

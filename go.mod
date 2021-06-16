@@ -19,6 +19,7 @@ require (
 	golang.org/x/sys v0.0.0-20210611083646-a4fc73990273 // indirect
 	google.golang.org/genproto v0.0.0-20210614143202-012ab6975634 // indirect
 	google.golang.org/grpc v1.38.0
+	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 )
 
 replace github.com/ozoncp/ocp-howto-api/pkg/ocp-howto-api => ./pkg/ocp-howto-api
