@@ -15,6 +15,20 @@ service OcpHowtoApi {
         };
     }
 
+    // Создает несколько новых сущностей howto
+    rpc MultiCreateHowtoV1(MultiCreateHowtoV1Request) returns (MultiCreateHowtoV1Response){
+        option (google.api.http) = {
+            post: "/v1/howtos"
+        };
+    }
+
+    // Обновляет сущность howto
+    rpc UpdateHowtoV1(UpdateHowtoV1Request) returns (UpdateHowtoV1Response){
+        option (google.api.http) = {
+            post: "/v1/howtos"
+        };
+    }
+
     // Возвращает полное описание сущности howto по её идентификатору
     rpc DescribeHowtoV1(DescribeHowtoV1Request) returns (DescribeHowtoV1Response){
         option (google.api.http) = {
@@ -45,6 +59,21 @@ message CreateHowtoV1Request {
 
 message CreateHowtoV1Response {
     uint64 id = 1;
+}
+
+message MultiCreateHowtoV1Request {
+    repeated Howto howtos = 1;
+}
+
+message MultiCreateHowtoV1Response {
+    uint64 added = 1;
+}
+
+message UpdateHowtoV1Request {
+    Howto howto = 1;
+}
+
+message UpdateHowtoV1Response {
 }
 
 message DescribeHowtoV1Request {

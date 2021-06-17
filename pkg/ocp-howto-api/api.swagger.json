@@ -50,13 +50,13 @@
         ]
       },
       "post": {
-        "summary": "Создает новую сущность howto и возвращает её идентификатор",
-        "operationId": "OcpHowtoApi_CreateHowtoV1",
+        "summary": "Обновляет сущность howto",
+        "operationId": "OcpHowtoApi_UpdateHowtoV1",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/apiCreateHowtoV1Response"
+              "$ref": "#/definitions/apiUpdateHowtoV1Response"
             }
           },
           "default": {
@@ -183,7 +183,19 @@
         }
       }
     },
+    "apiMultiCreateHowtoV1Response": {
+      "type": "object",
+      "properties": {
+        "added": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
     "apiRemoveHowtoV1Response": {
+      "type": "object"
+    },
+    "apiUpdateHowtoV1Response": {
       "type": "object"
     },
     "protobufAny": {

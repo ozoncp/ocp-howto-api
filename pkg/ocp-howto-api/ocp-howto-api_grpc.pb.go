@@ -20,6 +20,10 @@ const _ = grpc.SupportPackageIsVersion7
 type OcpHowtoApiClient interface {
 	// Создает новую сущность howto и возвращает её идентификатор
 	CreateHowtoV1(ctx context.Context, in *CreateHowtoV1Request, opts ...grpc.CallOption) (*CreateHowtoV1Response, error)
+	// Создает несколько новых сущностей howto
+	MultiCreateHowtoV1(ctx context.Context, in *MultiCreateHowtoV1Request, opts ...grpc.CallOption) (*MultiCreateHowtoV1Response, error)
+	// Обновляет сущность howto
+	UpdateHowtoV1(ctx context.Context, in *UpdateHowtoV1Request, opts ...grpc.CallOption) (*UpdateHowtoV1Response, error)
 	// Возвращает полное описание сущности howto по её идентификатору
 	DescribeHowtoV1(ctx context.Context, in *DescribeHowtoV1Request, opts ...grpc.CallOption) (*DescribeHowtoV1Response, error)
 	// Возвращает список сущностей howto
@@ -39,6 +43,24 @@ func NewOcpHowtoApiClient(cc grpc.ClientConnInterface) OcpHowtoApiClient {
 func (c *ocpHowtoApiClient) CreateHowtoV1(ctx context.Context, in *CreateHowtoV1Request, opts ...grpc.CallOption) (*CreateHowtoV1Response, error) {
 	out := new(CreateHowtoV1Response)
 	err := c.cc.Invoke(ctx, "/ocp.howto.api.OcpHowtoApi/CreateHowtoV1", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *ocpHowtoApiClient) MultiCreateHowtoV1(ctx context.Context, in *MultiCreateHowtoV1Request, opts ...grpc.CallOption) (*MultiCreateHowtoV1Response, error) {
+	out := new(MultiCreateHowtoV1Response)
+	err := c.cc.Invoke(ctx, "/ocp.howto.api.OcpHowtoApi/MultiCreateHowtoV1", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *ocpHowtoApiClient) UpdateHowtoV1(ctx context.Context, in *UpdateHowtoV1Request, opts ...grpc.CallOption) (*UpdateHowtoV1Response, error) {
+	out := new(UpdateHowtoV1Response)
+	err := c.cc.Invoke(ctx, "/ocp.howto.api.OcpHowtoApi/UpdateHowtoV1", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -78,6 +100,10 @@ func (c *ocpHowtoApiClient) RemoveHowtoV1(ctx context.Context, in *RemoveHowtoV1
 type OcpHowtoApiServer interface {
 	// Создает новую сущность howto и возвращает её идентификатор
 	CreateHowtoV1(context.Context, *CreateHowtoV1Request) (*CreateHowtoV1Response, error)
+	// Создает несколько новых сущностей howto
+	MultiCreateHowtoV1(context.Context, *MultiCreateHowtoV1Request) (*MultiCreateHowtoV1Response, error)
+	// Обновляет сущность howto
+	UpdateHowtoV1(context.Context, *UpdateHowtoV1Request) (*UpdateHowtoV1Response, error)
 	// Возвращает полное описание сущности howto по её идентификатору
 	DescribeHowtoV1(context.Context, *DescribeHowtoV1Request) (*DescribeHowtoV1Response, error)
 	// Возвращает список сущностей howto
@@ -93,6 +119,12 @@ type UnimplementedOcpHowtoApiServer struct {
 
 func (UnimplementedOcpHowtoApiServer) CreateHowtoV1(context.Context, *CreateHowtoV1Request) (*CreateHowtoV1Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateHowtoV1 not implemented")
+}
+func (UnimplementedOcpHowtoApiServer) MultiCreateHowtoV1(context.Context, *MultiCreateHowtoV1Request) (*MultiCreateHowtoV1Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MultiCreateHowtoV1 not implemented")
+}
+func (UnimplementedOcpHowtoApiServer) UpdateHowtoV1(context.Context, *UpdateHowtoV1Request) (*UpdateHowtoV1Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateHowtoV1 not implemented")
 }
 func (UnimplementedOcpHowtoApiServer) DescribeHowtoV1(context.Context, *DescribeHowtoV1Request) (*DescribeHowtoV1Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DescribeHowtoV1 not implemented")
@@ -130,6 +162,42 @@ func _OcpHowtoApi_CreateHowtoV1_Handler(srv interface{}, ctx context.Context, de
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(OcpHowtoApiServer).CreateHowtoV1(ctx, req.(*CreateHowtoV1Request))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OcpHowtoApi_MultiCreateHowtoV1_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MultiCreateHowtoV1Request)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OcpHowtoApiServer).MultiCreateHowtoV1(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/ocp.howto.api.OcpHowtoApi/MultiCreateHowtoV1",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OcpHowtoApiServer).MultiCreateHowtoV1(ctx, req.(*MultiCreateHowtoV1Request))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OcpHowtoApi_UpdateHowtoV1_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateHowtoV1Request)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OcpHowtoApiServer).UpdateHowtoV1(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/ocp.howto.api.OcpHowtoApi/UpdateHowtoV1",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OcpHowtoApiServer).UpdateHowtoV1(ctx, req.(*UpdateHowtoV1Request))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -198,6 +266,14 @@ var OcpHowtoApi_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateHowtoV1",
 			Handler:    _OcpHowtoApi_CreateHowtoV1_Handler,
+		},
+		{
+			MethodName: "MultiCreateHowtoV1",
+			Handler:    _OcpHowtoApi_MultiCreateHowtoV1_Handler,
+		},
+		{
+			MethodName: "UpdateHowtoV1",
+			Handler:    _OcpHowtoApi_UpdateHowtoV1_Handler,
 		},
 		{
 			MethodName: "DescribeHowtoV1",

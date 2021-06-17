@@ -2,8 +2,13 @@ package api
 
 import (
 	"context"
+	"fmt"
+	"time"
 
+	"github.com/opentracing/opentracing-go"
 	"github.com/ozoncp/ocp-howto-api/internal/howto"
+	"github.com/ozoncp/ocp-howto-api/internal/metrics"
+	"github.com/ozoncp/ocp-howto-api/internal/producer"
 	"github.com/ozoncp/ocp-howto-api/internal/repo"
 	desc "github.com/ozoncp/ocp-howto-api/pkg/ocp-howto-api"
 	log "github.com/rs/zerolog/log"
@@ -12,20 +17,34 @@ import (
 type api struct {
 	desc.UnimplementedOcpHowtoApiServer
 	repo repo.Repo
+	prod producer.Producer
 }
 
-func NewOcpHowtoApi(repo repo.Repo) desc.OcpHowtoApiServer {
+func NewOcpHowtoApi(
+	repo repo.Repo,
+	prod producer.Producer,
+) desc.OcpHowtoApiServer {
 	return &api{
 		repo: repo,
+		prod: prod,
 	}
 }
 
-func toMessage(howto howto.Howto) *desc.Howto {
+func toMessage(h howto.Howto) *desc.Howto {
 	return &desc.Howto{
-		Id:       howto.Id,
-		CourseId: howto.CourseId,
-		Question: howto.Question,
-		Answer:   howto.Answer,
+		Id:       h.Id,
+		CourseId: h.CourseId,
+		Question: h.Question,
+		Answer:   h.Answer,
+	}
+}
+
+func fromMessage(h *desc.Howto) howto.Howto {
+	return howto.Howto{
+		Id:       h.Id,
+		CourseId: h.CourseId,
+		Question: h.Question,
+		Answer:   h.Answer,
 	}
 }
 
@@ -54,7 +73,93 @@ func (a *api) CreateHowtoV1(
 	}
 
 	log.Info().Uint64("Id", id).Msg("Howto created successfully")
+	metrics.IncrementCreates(1)
+
+	event := producer.Event{
+		Type: producer.EventTypeCreated,
+		Body: map[string]interface{}{
+			"Id":        id,
+			"Timestamp": time.Now(),
+		},
+	}
+	a.prod.SendEvent(event)
+
 	return &desc.CreateHowtoV1Response{Id: id}, nil
+}
+
+func (a *api) MultiCreateHowtoV1(
+	ctx context.Context,
+	req *desc.MultiCreateHowtoV1Request,
+) (*desc.MultiCreateHowtoV1Response, error) {
+
+	opName := fmt.Sprintf("Create %v howtos", len(req.Howtos))
+	span, ctx := opentracing.StartSpanFromContext(ctx, opName)
+	defer span.Finish()
+
+	log.Info().Msgf("Requested to create %v howtos", len(req.Howtos))
+
+	var howtos []howto.Howto
+	for _, h := range req.Howtos {
+		howtos = append(howtos, fromMessage(h))
+	}
+
+	added, err := a.repo.AddHowtos(ctx, howtos)
+	metrics.IncrementCreates(added)
+
+	event := producer.Event{
+		Type: producer.EventTypeCreated,
+		Body: map[string]interface{}{
+			"Count":     added,
+			"Timestamp": time.Now(),
+		},
+	}
+	a.prod.SendEvent(event)
+
+	if err != nil {
+		log.Error().
+			Err(err).
+			Msgf("Error occurred when creating howtos. %v actually was added", added)
+		return &desc.MultiCreateHowtoV1Response{Added: added}, err
+	}
+
+	log.Info().Msgf("%v howtos created successfully", added)
+
+	expected := uint64(len(req.Howtos))
+	if added != expected {
+		log.Warn().
+			Uint64("expected", expected).
+			Uint64("added", added).
+			Msg("Number of added howtos does not match requested number")
+	}
+
+	return &desc.MultiCreateHowtoV1Response{Added: added}, nil
+}
+
+func (a *api) UpdateHowtoV1(
+	ctx context.Context,
+	req *desc.UpdateHowtoV1Request,
+) (*desc.UpdateHowtoV1Response, error) {
+
+	log.Info().Uint64("Id", req.Howto.Id).Msg("Requested to update howto")
+
+	if err := a.repo.UpdateHowto(ctx, fromMessage(req.Howto)); err != nil {
+		log.Error().Err(err).Msg("Failed to update howto")
+		return &desc.UpdateHowtoV1Response{}, err
+	}
+
+	log.Info().Msg("Howto updated successfully")
+	metrics.IncrementUpdates(1)
+
+	event := producer.Event{
+		Type: producer.EventTypeUpdated,
+		Body: map[string]interface{}{
+			"Id":        req.Howto.Id,
+			"Timestamp": time.Now(),
+		},
+	}
+	a.prod.SendEvent(event)
+
+	return &desc.UpdateHowtoV1Response{}, nil
 }
 
 func (a *api) DescribeHowtoV1(
@@ -117,5 +222,16 @@ func (a *api) RemoveHowtoV1(
 	}
 
 	log.Info().Msg("Howto removed successfully")
+	metrics.IncrementRemoves(1)
+
+	event := producer.Event{
+		Type: producer.EventTypeRemoved,
+		Body: map[string]interface{}{
+			"Id":        req.Id,
+			"Timestamp": time.Now(),
+		},
+	}
+	a.prod.SendEvent(event)
+
 	return &desc.RemoveHowtoV1Response{}, nil
 }
