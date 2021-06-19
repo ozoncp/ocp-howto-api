@@ -28,32 +28,27 @@ type Producer interface {
 
 type producer struct {
 	Producer
-	prod   sarama.SyncProducer
-	topic  string
-	events chan Event
-	close  chan struct{}
-	done   chan struct{}
+	prod    sarama.SyncProducer
+	brokers []string
+	topic   string
+	events  chan Event
+	close   chan struct{}
+	done    chan struct{}
 }
 
-func New(brokers []string, topic string, capacity uint) (Producer, error) {
+func New(brokers []string, topic string, capacity uint) Producer {
 
-	config := sarama.NewConfig()
-	config.Producer.Partitioner = sarama.NewRandomPartitioner
-	config.Producer.RequiredAcks = sarama.WaitForAll
-	config.Producer.Return.Successes = true
-
-	prod, err := sarama.NewSyncProducer(brokers, config)
-	if err != nil {
-		return nil, err
+	prod := producer{
+		prod:    nil,
+		brokers: brokers,
+		topic:   topic,
+		events:  make(chan Event, capacity),
+		close:   make(chan struct{}),
+		done:    make(chan struct{}),
 	}
+	prod.createProducer()
 
-	return &producer{
-		prod:   prod,
-		topic:  topic,
-		events: make(chan Event, capacity),
-		close:  make(chan struct{}),
-		done:   make(chan struct{}),
-	}, nil
+	return &prod
 }
 
 func (p *producer) Init() {
@@ -90,7 +85,31 @@ func (p *producer) flush() {
 	}
 }
 
+func (p *producer) createProducer() bool {
+	if p.prod != nil {
+		return true
+	}
+
+	config := sarama.NewConfig()
+	config.Producer.Partitioner = sarama.NewRandomPartitioner
+	config.Producer.RequiredAcks = sarama.WaitForAll
+	config.Producer.Return.Successes = true
+
+	prod, err := sarama.NewSyncProducer(p.brokers, config)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to create producer")
+		return false
+	}
+
+	p.prod = prod
+	return true
+}
+
 func (p *producer) send(event Event) {
+
+	if !p.createProducer() {
+		return
+	}
 
 	json, err := json.Marshal(event)
 	if err != nil {

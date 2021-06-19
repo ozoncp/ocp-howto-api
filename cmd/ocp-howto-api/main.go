@@ -57,10 +57,7 @@ func runGrpc() error {
 		log.Warn().Err(err).Msg("Database is inaccessable")
 	}
 
-	prod, err := producer.New(cfg.Kafka.Brokers, cfg.Kafka.Topic, 100)
-	if err != nil {
-		return err
-	}
+	prod := producer.New(cfg.Kafka.Brokers, cfg.Kafka.Topic, 100)
 	prod.Init()
 	defer prod.Close()
 
