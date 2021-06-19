@@ -76,16 +76,7 @@ func (a *api) CreateHowtoV1(
 	}
 
 	log.Info().Uint64("Id", id).Msg("Howto created successfully")
-	metrics.IncrementCreates(1)
-
-	event := producer.Event{
-		Type: producer.EventTypeCreated,
-		Body: map[string]interface{}{
-			"Id":        id,
-			"Timestamp": time.Now(),
-		},
-	}
-	a.prod.SendEvent(event)
+	a.recordCreates([]uint64{id})
 
 	return &desc.CreateHowtoV1Response{Id: id}, nil
 }
@@ -107,28 +98,14 @@ func (a *api) MultiCreateHowtoV1(
 	}
 
 	added, err := a.repo.AddHowtos(ctx, toAdd)
-	addedCount := len(added)
-	metrics.IncrementCreates(uint64(addedCount))
-
-	event := producer.Event{
-		Type: producer.EventTypeCreated,
-		Body: map[string]interface{}{
-			"Id":        added,
-			"Timestamp": time.Now(),
-		},
-	}
-	a.prod.SendEvent(event)
-
 	if err != nil {
-		log.Error().
-			Err(err).
-			Msgf("Error occurred when creating howtos. %v actually was added", addedCount)
-		return &desc.MultiCreateHowtoV1Response{Ids: added}, err
+		log.Error().Err(err).Msg("Error occurred when creating howtos.")
+		return &desc.MultiCreateHowtoV1Response{}, err
 	}
 
-	log.Info().Msgf("%v howtos created successfully", addedCount)
-
+	addedCount := len(added)
 	expectedCount := len(req.Params)
+	log.Info().Msgf("%v howtos created successfully", addedCount)
 	if addedCount != expectedCount {
 		log.Warn().
 			Int("expected", expectedCount).
@@ -136,6 +113,7 @@ func (a *api) MultiCreateHowtoV1(
 			Msg("Number of added howtos does not match requested number")
 	}
 
+	a.recordCreates(added)
 	return &desc.MultiCreateHowtoV1Response{Ids: added}, nil
 }
 
@@ -152,16 +130,7 @@ func (a *api) UpdateHowtoV1(
 	}
 
 	log.Info().Msg("Howto updated successfully")
-	metrics.IncrementUpdates(1)
-
-	event := producer.Event{
-		Type: producer.EventTypeUpdated,
-		Body: map[string]interface{}{
-			"Id":        req.Howto.Id,
-			"Timestamp": time.Now(),
-		},
-	}
-	a.prod.SendEvent(event)
+	a.recordUpdates([]uint64{req.Howto.Id})
 
 	return &desc.UpdateHowtoV1Response{}, nil
 }
@@ -226,16 +195,32 @@ func (a *api) RemoveHowtoV1(
 	}
 
 	log.Info().Msg("Howto removed successfully")
-	metrics.IncrementRemoves(1)
+	a.recordRemoves([]uint64{req.Id})
 
-	event := producer.Event{
-		Type: producer.EventTypeRemoved,
+	return &desc.RemoveHowtoV1Response{}, nil
+}
+
+func (a *api) recordCreates(ids []uint64) {
+	metrics.IncrementCreates(len(ids))
+	a.prod.SendEvent(newCudEvent(producer.EventTypeCreated, ids))
+}
+
+func (a *api) recordUpdates(ids []uint64) {
+	metrics.IncrementUpdates(len(ids))
+	a.prod.SendEvent(newCudEvent(producer.EventTypeUpdated, ids))
+}
+
+func (a *api) recordRemoves(ids []uint64) {
+	metrics.IncrementRemoves(len(ids))
+	a.prod.SendEvent(newCudEvent(producer.EventTypeRemoved, ids))
+}
+
+func newCudEvent(type_ producer.EventType, ids []uint64) producer.Event {
+	return producer.Event{
+		Type: type_,
 		Body: map[string]interface{}{
-			"Id":        req.Id,
+			"Ids":       ids,
 			"Timestamp": time.Now(),
 		},
 	}
-	a.prod.SendEvent(event)
-
-	return &desc.RemoveHowtoV1Response{}, nil
 }

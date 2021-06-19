@@ -22,21 +22,21 @@ func Register() {
 	prometheus.MustRegister(counters)
 }
 
-func increment(action string, times uint64) {
+func increment(action string, times int) {
 	if counters == nil {
 		return
 	}
 	counters.With(prometheus.Labels{label: action}).Add(float64(times))
 }
 
-func IncrementCreates(times uint64) {
+func IncrementCreates(times int) {
 	increment(create, times)
 }
 
-func IncrementUpdates(times uint64) {
+func IncrementUpdates(times int) {
 	increment(update, times)
 }
 
-func IncrementRemoves(times uint64) {
+func IncrementRemoves(times int) {
 	increment(remove, times)
 }
