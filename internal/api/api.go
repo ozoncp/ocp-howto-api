@@ -32,19 +32,28 @@ func NewOcpHowtoApi(
 
 func toMessage(h howto.Howto) *desc.Howto {
 	return &desc.Howto{
-		Id:       h.Id,
-		CourseId: h.CourseId,
-		Question: h.Question,
-		Answer:   h.Answer,
-	}
+		Id: h.Id,
+		Params: &desc.HowtoParams{
+			CourseId: h.CourseId,
+			Question: h.Question,
+			Answer:   h.Answer,
+		}}
 }
 
 func fromMessage(h *desc.Howto) howto.Howto {
 	return howto.Howto{
 		Id:       h.Id,
-		CourseId: h.CourseId,
-		Question: h.Question,
-		Answer:   h.Answer,
+		CourseId: h.Params.CourseId,
+		Question: h.Params.Question,
+		Answer:   h.Params.Answer,
+	}
+}
+
+func fromParams(params *desc.HowtoParams) howto.Howto {
+	return howto.Howto{
+		CourseId: params.CourseId,
+		Question: params.Question,
+		Answer:   params.Answer,
 	}
 }
 
@@ -54,18 +63,12 @@ func (a *api) CreateHowtoV1(
 ) (*desc.CreateHowtoV1Response, error) {
 
 	log.Info().
-		Uint64("CourseId", req.CourseId).
-		Str("Q", req.Question).
-		Str("A", req.Answer).
+		Uint64("CourseId", req.Params.CourseId).
+		Str("Q", req.Params.Question).
+		Str("A", req.Params.Answer).
 		Msg("Requested to create howto")
 
-	id, err := a.repo.AddHowto(
-		ctx,
-		howto.Howto{
-			CourseId: req.CourseId,
-			Question: req.Question,
-			Answer:   req.Answer,
-		})
+	id, err := a.repo.AddHowto(ctx, fromParams(req.Params))
 
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to create howto")
@@ -92,20 +95,20 @@ func (a *api) MultiCreateHowtoV1(
 	req *desc.MultiCreateHowtoV1Request,
 ) (*desc.MultiCreateHowtoV1Response, error) {
 
-	opName := fmt.Sprintf("Create %v howtos", len(req.Howtos))
+	opName := fmt.Sprintf("Create %v howtos", len(req.Params))
 	span, ctx := opentracing.StartSpanFromContext(ctx, opName)
 	defer span.Finish()
 
-	log.Info().Msgf("Requested to create %v howtos", len(req.Howtos))
+	log.Info().Msgf("Requested to create %v howtos", len(req.Params))
 
-	var howtos []howto.Howto
-	for _, h := range req.Howtos {
-		howtos = append(howtos, fromMessage(h))
+	var toAdd []howto.Howto
+	for _, p := range req.Params {
+		toAdd = append(toAdd, fromParams(p))
 	}
 
-	added, err := a.repo.AddHowtos(ctx, howtos)
-	addedCount := uint64(len(added))
-	metrics.IncrementCreates(addedCount)
+	added, err := a.repo.AddHowtos(ctx, toAdd)
+	addedCount := len(added)
+	metrics.IncrementCreates(uint64(addedCount))
 
 	event := producer.Event{
 		Type: producer.EventTypeCreated,
@@ -120,20 +123,20 @@ func (a *api) MultiCreateHowtoV1(
 		log.Error().
 			Err(err).
 			Msgf("Error occurred when creating howtos. %v actually was added", addedCount)
-		return &desc.MultiCreateHowtoV1Response{Added: addedCount}, err
+		return &desc.MultiCreateHowtoV1Response{Ids: added}, err
 	}
 
 	log.Info().Msgf("%v howtos created successfully", addedCount)
 
-	expected := uint64(len(req.Howtos))
-	if addedCount != expected {
+	expectedCount := len(req.Params)
+	if addedCount != expectedCount {
 		log.Warn().
-			Uint64("expected", expected).
-			Uint64("added", addedCount).
+			Int("expected", expectedCount).
+			Int("added", addedCount).
 			Msg("Number of added howtos does not match requested number")
 	}
 
-	return &desc.MultiCreateHowtoV1Response{Added: addedCount}, nil
+	return &desc.MultiCreateHowtoV1Response{Ids: added}, nil
 }
 
 func (a *api) UpdateHowtoV1(

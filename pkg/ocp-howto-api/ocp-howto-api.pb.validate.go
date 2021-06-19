@@ -41,11 +41,15 @@ func (m *CreateHowtoV1Request) Validate() error {
 		return nil
 	}
 
-	// no validation rules for CourseId
-
-	// no validation rules for Question
-
-	// no validation rules for Answer
+	if v, ok := interface{}(m.GetParams()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CreateHowtoV1RequestValidationError{
+				field:  "Params",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	return nil
 }
@@ -183,13 +187,13 @@ func (m *MultiCreateHowtoV1Request) Validate() error {
 		return nil
 	}
 
-	for idx, item := range m.GetHowtos() {
+	for idx, item := range m.GetParams() {
 		_, _ = idx, item
 
 		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return MultiCreateHowtoV1RequestValidationError{
-					field:  fmt.Sprintf("Howtos[%v]", idx),
+					field:  fmt.Sprintf("Params[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
@@ -264,8 +268,6 @@ func (m *MultiCreateHowtoV1Response) Validate() error {
 	if m == nil {
 		return nil
 	}
-
-	// no validation rules for Added
 
 	return nil
 }
@@ -905,6 +907,77 @@ var _ interface {
 	ErrorName() string
 } = RemoveHowtoV1ResponseValidationError{}
 
+// Validate checks the field values on HowtoParams with the rules defined in
+// the proto definition for this message. If any rules are violated, an error
+// is returned.
+func (m *HowtoParams) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	// no validation rules for CourseId
+
+	// no validation rules for Question
+
+	// no validation rules for Answer
+
+	return nil
+}
+
+// HowtoParamsValidationError is the validation error returned by
+// HowtoParams.Validate if the designated constraints aren't met.
+type HowtoParamsValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e HowtoParamsValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e HowtoParamsValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e HowtoParamsValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e HowtoParamsValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e HowtoParamsValidationError) ErrorName() string { return "HowtoParamsValidationError" }
+
+// Error satisfies the builtin error interface
+func (e HowtoParamsValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sHowtoParams.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = HowtoParamsValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = HowtoParamsValidationError{}
+
 // Validate checks the field values on Howto with the rules defined in the
 // proto definition for this message. If any rules are violated, an error is returned.
 func (m *Howto) Validate() error {
@@ -914,11 +987,15 @@ func (m *Howto) Validate() error {
 
 	// no validation rules for Id
 
-	// no validation rules for CourseId
-
-	// no validation rules for Question
-
-	// no validation rules for Answer
+	if v, ok := interface{}(m.GetParams()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return HowtoValidationError{
+				field:  "Params",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	return nil
 }

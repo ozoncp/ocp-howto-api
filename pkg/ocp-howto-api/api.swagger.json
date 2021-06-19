@@ -159,6 +159,15 @@
           "type": "string",
           "format": "uint64"
         },
+        "params": {
+          "$ref": "#/definitions/apiHowtoParams"
+        }
+      },
+      "title": "Описание сущности howto"
+    },
+    "apiHowtoParams": {
+      "type": "object",
+      "properties": {
         "course_id": {
           "type": "string",
           "format": "uint64"
@@ -170,7 +179,7 @@
           "type": "string"
         }
       },
-      "title": "Описание сущности howto"
+      "title": "Параметры сущности howto"
     },
     "apiListHowtosV1Response": {
       "type": "object",
@@ -186,9 +195,12 @@
     "apiMultiCreateHowtoV1Response": {
       "type": "object",
       "properties": {
-        "added": {
-          "type": "string",
-          "format": "uint64"
+        "ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uint64"
+          }
         }
       }
     },
