@@ -35,9 +35,7 @@ type producer struct {
 	done   chan struct{}
 }
 
-func New(broker string, topic string, capacity uint) (Producer, error) {
-
-	brokers := []string{broker}
+func New(brokers []string, topic string, capacity uint) (Producer, error) {
 
 	config := sarama.NewConfig()
 	config.Producer.Partitioner = sarama.NewRandomPartitioner
