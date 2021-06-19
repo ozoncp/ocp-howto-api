@@ -8,6 +8,7 @@ import (
 	"github.com/opentracing/opentracing-go"
 	"github.com/ozoncp/ocp-howto-api/internal/howto"
 	"github.com/ozoncp/ocp-howto-api/internal/utils"
+	"github.com/rs/zerolog/log"
 
 	sqr "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
@@ -17,7 +18,7 @@ var dummyHowto = howto.Howto{}
 
 type Repo interface {
 	AddHowto(context.Context, howto.Howto) (uint64, error)
-	AddHowtos(context.Context, []howto.Howto) (uint64, error)
+	AddHowtos(context.Context, []howto.Howto) ([]uint64, error)
 	UpdateHowto(context.Context, howto.Howto) error
 	RemoveHowto(ctx context.Context, id uint64) error
 	DescribeHowto(ctx context.Context, id uint64) (howto.Howto, error)
@@ -53,47 +54,44 @@ type repo struct {
 	batchSize   int
 }
 
-func (repo *repo) AddHowto(ctx context.Context, howto howto.Howto) (uint64, error) {
+func (repo *repo) AddHowto(ctx context.Context, h howto.Howto) (uint64, error) {
 
-	cols := repo.table.columns
-	query := sqr.Insert(repo.table.name).
-		Columns(cols.courseId, cols.question, cols.answer).
-		Values(howto.CourseId, howto.Question, howto.Answer).
-		Suffix(fmt.Sprintf("RETURNING %v", cols.id)).
-		RunWith(repo.db).
-		PlaceholderFormat(repo.placeholder)
-
-	if err := query.QueryRowContext(ctx).Scan(&howto.Id); err != nil {
-		return dummyHowto.Id, err
+	added, err := repo.insertBatch(ctx, []howto.Howto{h})
+	if err != nil {
+		return 0, err
 	}
 
-	return howto.Id, nil
+	if len(added) == 0 {
+		return 0, errors.New("unexpected fail to insert howto")
+	}
+
+	return added[0], nil
 }
 
-func (repo *repo) AddHowtos(ctx context.Context, howtos []howto.Howto) (uint64, error) {
+func (repo *repo) AddHowtos(ctx context.Context, howtos []howto.Howto) ([]uint64, error) {
 
 	opName := fmt.Sprintf("Add %v howtos", len(howtos))
 	span, ctx := opentracing.StartSpanFromContext(ctx, opName)
 	defer span.Finish()
 
 	if len(howtos) == 0 {
-		return 0, nil
+		return nil, nil
 	}
 
-	added := uint64(0)
+	added := make([]uint64, 0, len(howtos))
 	batches := utils.SplitToBulks(howtos, repo.batchSize)
 	for _, batch := range batches {
-		inserted, err := repo.insertBatch(ctx, batch)
-		added += uint64(inserted)
+		ids, err := repo.insertBatch(ctx, batch)
 		if err != nil {
-			return added, err
+			log.Warn().Err(err).Msg("failed to insert batch of howtos")
 		}
+		added = append(added, ids...)
 	}
 
 	return added, nil
 }
 
-func (repo *repo) insertBatch(ctx context.Context, howtos []howto.Howto) (int64, error) {
+func (repo *repo) insertBatch(ctx context.Context, howtos []howto.Howto) ([]uint64, error) {
 
 	opName := fmt.Sprintf("Insert batch with %v howtos", len(howtos))
 	span, ctx := opentracing.StartSpanFromContext(ctx, opName)
@@ -103,22 +101,30 @@ func (repo *repo) insertBatch(ctx context.Context, howtos []howto.Howto) (int64,
 	query := sqr.Insert(repo.table.name).
 		Columns(cols.courseId, cols.question, cols.answer).
 		RunWith(repo.db).
-		PlaceholderFormat(repo.placeholder)
+		PlaceholderFormat(repo.placeholder).Columns().
+		Suffix(fmt.Sprintf("RETURNING %v", cols.id))
 
 	for _, howto := range howtos {
 		query = query.Values(howto.CourseId, howto.Question, howto.Answer)
 	}
 
-	result, err := query.ExecContext(ctx)
+	rows, err := query.QueryContext(ctx)
 	if err != nil {
-		return 0, err
+		return nil, err
+	}
+	defer rows.Close()
+
+	added := make([]uint64, 0, len(howtos))
+	for rows.Next() {
+		var id uint64
+		if err := rows.Scan(&id); err != nil {
+			continue
+		}
+
+		added = append(added, id)
 	}
 
-	if added, err := result.RowsAffected(); err == nil {
-		return added, nil
-	}
-
-	return int64(len(howtos)), nil
+	return added, nil
 }
 
 func (repo *repo) UpdateHowto(ctx context.Context, howto howto.Howto) error {

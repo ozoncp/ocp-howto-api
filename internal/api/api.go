@@ -104,12 +104,13 @@ func (a *api) MultiCreateHowtoV1(
 	}
 
 	added, err := a.repo.AddHowtos(ctx, howtos)
-	metrics.IncrementCreates(added)
+	addedCount := uint64(len(added))
+	metrics.IncrementCreates(addedCount)
 
 	event := producer.Event{
 		Type: producer.EventTypeCreated,
 		Body: map[string]interface{}{
-			"Count":     added,
+			"Id":        added,
 			"Timestamp": time.Now(),
 		},
 	}
@@ -118,21 +119,21 @@ func (a *api) MultiCreateHowtoV1(
 	if err != nil {
 		log.Error().
 			Err(err).
-			Msgf("Error occurred when creating howtos. %v actually was added", added)
-		return &desc.MultiCreateHowtoV1Response{Added: added}, err
+			Msgf("Error occurred when creating howtos. %v actually was added", addedCount)
+		return &desc.MultiCreateHowtoV1Response{Added: addedCount}, err
 	}
 
-	log.Info().Msgf("%v howtos created successfully", added)
+	log.Info().Msgf("%v howtos created successfully", addedCount)
 
 	expected := uint64(len(req.Howtos))
-	if added != expected {
+	if addedCount != expected {
 		log.Warn().
 			Uint64("expected", expected).
-			Uint64("added", added).
+			Uint64("added", addedCount).
 			Msg("Number of added howtos does not match requested number")
 	}
 
-	return &desc.MultiCreateHowtoV1Response{Added: added}, nil
+	return &desc.MultiCreateHowtoV1Response{Added: addedCount}, nil
 }
 
 func (a *api) UpdateHowtoV1(
