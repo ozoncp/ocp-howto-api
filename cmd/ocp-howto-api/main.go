@@ -32,6 +32,14 @@ func runMetrics() {
 	}()
 }
 
+func openDatabase() (*sqlx.DB, error) {
+	dbCfg := &cfg.Database
+	dsn := fmt.Sprintf("user=%v password=%v dbname=%v port=%v sslmode=%v",
+		dbCfg.User, dbCfg.Password, dbCfg.Database, dbCfg.Port, dbCfg.SslMode)
+
+	return sqlx.Open(dbCfg.Driver, dsn)
+}
+
 func runGrpc() error {
 
 	listener, err := net.Listen("tcp", cfg.Grpc.Address)
@@ -39,15 +47,15 @@ func runGrpc() error {
 		return fmt.Errorf("failed to start listening: %v", err)
 	}
 
-	dbCfg := &cfg.Database
-	dsn := fmt.Sprintf("user=%v password=%v dbname=%v port=%v sslmode=%v",
-		dbCfg.User, dbCfg.Password, dbCfg.Database, dbCfg.Port, dbCfg.SslMode)
-
-	db, err := sqlx.Connect(dbCfg.Driver, dsn)
+	db, err := openDatabase()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to open database: %v", err)
 	}
 	defer db.Close()
+
+	if err := db.Ping(); err != nil {
+		log.Warn().Err(err).Msg("Database is inaccessable")
+	}
 
 	prod, err := producer.New(cfg.Kafka.Brokers[0], cfg.Kafka.Topic, 100)
 	if err != nil {
@@ -76,6 +84,7 @@ func main() {
 	}
 
 	fmt.Printf("%v. Author: %v", cfg.Project.Name, cfg.Project.Author)
+	fmt.Println()
 
 	runMetrics()
 	if err := runGrpc(); err != nil {
