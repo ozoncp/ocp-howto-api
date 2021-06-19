@@ -36,7 +36,7 @@ type producer struct {
 	done    chan struct{}
 }
 
-func New(brokers []string, topic string, capacity uint) Producer {
+func New(brokers []string, topic string, capacity int) Producer {
 
 	prod := producer{
 		prod:    nil,

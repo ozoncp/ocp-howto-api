@@ -16,12 +16,13 @@ type Grpc struct {
 }
 
 type Database struct {
-	Driver   string `yaml:"driver"`
-	Port     string `yaml:"port"`
-	Database string `yaml:"database"`
-	User     string `yaml:"user"`
-	Password string `yaml:"password"`
-	SslMode  string `yaml:"sslmode"`
+	Driver    string `yaml:"driver"`
+	Port      string `yaml:"port"`
+	Database  string `yaml:"database"`
+	User      string `yaml:"user"`
+	Password  string `yaml:"password"`
+	SslMode   string `yaml:"sslmode"`
+	BatchSize int    `yaml:"batch_size"`
 }
 
 type Metrics struct {
@@ -30,8 +31,9 @@ type Metrics struct {
 }
 
 type Kafka struct {
-	Brokers []string `yaml:"brokers"`
-	Topic   string   `yaml:"topic"`
+	Capacity int      `yaml:"events_queue_capacity"`
+	Brokers  []string `yaml:"brokers"`
+	Topic    string   `yaml:"topic"`
 }
 
 type Config struct {

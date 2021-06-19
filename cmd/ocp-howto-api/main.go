@@ -57,13 +57,13 @@ func runGrpc() error {
 		log.Warn().Err(err).Msg("Database is inaccessable")
 	}
 
-	prod := producer.New(cfg.Kafka.Brokers, cfg.Kafka.Topic, 100)
+	prod := producer.New(cfg.Kafka.Brokers, cfg.Kafka.Topic, cfg.Kafka.Capacity)
 	prod.Init()
 	defer prod.Close()
 
 	server := grpc.NewServer()
 	reflection.Register(server)
-	api := api.NewOcpHowtoApi(repo.NewRepo(*db, 10), prod)
+	api := api.NewOcpHowtoApi(repo.NewRepo(*db, cfg.Database.BatchSize), prod)
 	desc.RegisterOcpHowtoApiServer(server, api)
 	if err := server.Serve(listener); err != nil {
 		return fmt.Errorf("failed to serve server: %v", err)
