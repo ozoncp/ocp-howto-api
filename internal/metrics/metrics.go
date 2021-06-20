@@ -1,42 +1,74 @@
 package metrics
 
-import "github.com/prometheus/client_golang/prometheus"
+import (
+	"github.com/prometheus/client_golang/prometheus"
+)
 
 var (
-	counters *prometheus.CounterVec
-	label    string = "action"
-	create   string = "create"
-	update   string = "update"
-	remove   string = "remove"
+	actions  *prometheus.CounterVec
+	requests *prometheus.CounterVec
+)
+
+const (
+	label  string = "action"
+	create string = "create"
+	update string = "update"
+	remove string = "remove"
 )
 
 func Register() {
-	counters = prometheus.NewCounterVec(
+	requests = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "howto_actions",
+			Name: "howto_requests",
+			Help: "Number of requests for howto CUD actions.",
+		},
+		[]string{label},
+	)
+	actions = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "howto_successful_actions",
 			Help: "Number of howto CUD actions successfully performed.",
 		},
 		[]string{label},
 	)
 
-	prometheus.MustRegister(counters)
+	prometheus.MustRegister(requests, actions)
 }
 
-func increment(action string, times int) {
-	if counters == nil {
+func incrementRequests(req string, times int) {
+	if requests == nil {
 		return
 	}
-	counters.With(prometheus.Labels{label: action}).Add(float64(times))
+	requests.With(prometheus.Labels{label: req}).Add(float64(times))
+}
+
+func incrementActions(act string, times int) {
+	if actions == nil {
+		return
+	}
+	actions.With(prometheus.Labels{label: act}).Add(float64(times))
+}
+
+func IncrementCreateRequests(times int) {
+	incrementRequests(create, times)
+}
+
+func IncrementUpdateRequests(times int) {
+	incrementRequests(update, times)
+}
+
+func IncrementRemoveRequests(times int) {
+	incrementRequests(remove, times)
 }
 
 func IncrementCreates(times int) {
-	increment(create, times)
+	incrementActions(create, times)
 }
 
 func IncrementUpdates(times int) {
-	increment(update, times)
+	incrementActions(update, times)
 }
 
 func IncrementRemoves(times int) {
-	increment(remove, times)
+	incrementActions(remove, times)
 }

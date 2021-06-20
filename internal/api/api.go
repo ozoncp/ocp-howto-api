@@ -62,6 +62,7 @@ func (a *api) CreateHowtoV1(
 	req *desc.CreateHowtoV1Request,
 ) (*desc.CreateHowtoV1Response, error) {
 
+	metrics.IncrementCreateRequests(1)
 	log.Info().
 		Uint64("CourseId", req.Params.CourseId).
 		Str("Q", req.Params.Question).
@@ -90,6 +91,7 @@ func (a *api) MultiCreateHowtoV1(
 	span, ctx := opentracing.StartSpanFromContext(ctx, opName)
 	defer span.Finish()
 
+	metrics.IncrementCreateRequests(len(req.Params))
 	log.Info().Msgf("Requested to create %v howtos", len(req.Params))
 
 	var toAdd []howto.Howto
@@ -122,6 +124,7 @@ func (a *api) UpdateHowtoV1(
 	req *desc.UpdateHowtoV1Request,
 ) (*desc.UpdateHowtoV1Response, error) {
 
+	metrics.IncrementUpdateRequests(1)
 	log.Info().Uint64("Id", req.Howto.Id).Msg("Requested to update howto")
 
 	if err := a.repo.UpdateHowto(ctx, fromMessage(req.Howto)); err != nil {
@@ -187,6 +190,7 @@ func (a *api) RemoveHowtoV1(
 	req *desc.RemoveHowtoV1Request,
 ) (*desc.RemoveHowtoV1Response, error) {
 
+	metrics.IncrementRemoveRequests(1)
 	log.Info().Uint64("Id", req.Id).Msg("Requested to remove howto")
 
 	if err := a.repo.RemoveHowto(ctx, req.Id); err != nil {
