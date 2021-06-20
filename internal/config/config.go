@@ -31,9 +31,11 @@ type Metrics struct {
 }
 
 type Kafka struct {
-	Capacity int      `yaml:"events_queue_capacity"`
-	Brokers  []string `yaml:"brokers"`
-	Topic    string   `yaml:"topic"`
+	Capacity  int      `yaml:"events_queue_capacity"`
+	Brokers   []string `yaml:"brokers"`
+	Topic     string   `yaml:"topic"`
+	Key       string   `yaml:"key"`
+	Partition int32    `yaml:"partition"`
 }
 
 type Config struct {

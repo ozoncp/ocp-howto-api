@@ -5,6 +5,8 @@ import (
 
 	"github.com/Shopify/sarama"
 	log "github.com/rs/zerolog/log"
+
+	"github.com/ozoncp/ocp-howto-api/internal/config"
 )
 
 type EventType = uint64
@@ -28,23 +30,27 @@ type Producer interface {
 
 type producer struct {
 	Producer
-	sender  sarama.SyncProducer
-	brokers []string
-	topic   string
-	events  chan Event
-	close   chan struct{}
-	done    chan struct{}
+	sender     sarama.SyncProducer
+	brokers    []string
+	topic      string
+	keyEncoder sarama.ByteEncoder
+	partition  int32
+	events     chan Event
+	close      chan struct{}
+	done       chan struct{}
 }
 
-func New(brokers []string, topic string, capacity int) Producer {
+func New(cfg config.Kafka) Producer {
 
 	prod := producer{
-		sender:  nil,
-		brokers: brokers,
-		topic:   topic,
-		events:  make(chan Event, capacity),
-		close:   make(chan struct{}),
-		done:    make(chan struct{}),
+		sender:     nil,
+		brokers:    cfg.Brokers,
+		topic:      cfg.Topic,
+		keyEncoder: sarama.ByteEncoder([]byte(cfg.Key)),
+		partition:  cfg.Partition,
+		events:     make(chan Event, cfg.Capacity),
+		close:      make(chan struct{}),
+		done:       make(chan struct{}),
 	}
 
 	_, err := prod.getSender()
@@ -122,9 +128,11 @@ func (p *producer) send(event Event) {
 	if err != nil {
 		return
 	}
+
 	message := sarama.ProducerMessage{
 		Topic:     p.topic,
-		Partition: -1,
+		Partition: p.partition,
+		Key:       p.keyEncoder,
 		Value:     sarama.StringEncoder(json),
 	}
 	_, _, err = sender.SendMessage(&message)
