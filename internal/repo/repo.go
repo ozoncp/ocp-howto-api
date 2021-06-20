@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 
@@ -83,7 +84,8 @@ func (repo *repo) AddHowtos(ctx context.Context, howtos []howto.Howto) ([]uint64
 	for _, batch := range batches {
 		ids, err := repo.insertBatch(ctx, batch)
 		if err != nil {
-			log.Warn().Err(err).Msg("failed to insert batch of howtos")
+			log.Error().Err(err).Msg("failed to insert batch of howtos")
+			return added, err
 		}
 		added = append(added, ids...)
 	}
@@ -144,7 +146,7 @@ func (repo *repo) UpdateHowto(ctx context.Context, howto howto.Howto) error {
 	}
 
 	if affected, err := result.RowsAffected(); err == nil && affected == 0 {
-		return errors.New("row not found")
+		return sql.ErrNoRows
 	}
 	return nil
 }
@@ -162,7 +164,7 @@ func (repo *repo) RemoveHowto(ctx context.Context, id uint64) error {
 	}
 
 	if affected, err := result.RowsAffected(); err == nil && affected == 0 {
-		return errors.New("row not found")
+		return sql.ErrNoRows
 	}
 	return nil
 }
@@ -184,8 +186,9 @@ func (repo *repo) DescribeHowto(ctx context.Context, id uint64) (howto.Howto, er
 }
 
 func (repo *repo) ListHowtos(ctx context.Context, offset uint64, count uint64) ([]howto.Howto, error) {
-
-	var result []howto.Howto
+	if count == 0 {
+		return nil, nil
+	}
 
 	query := sqr.Select(repo.table.columns.ordered()...).
 		From(repo.table.name).
@@ -196,10 +199,11 @@ func (repo *repo) ListHowtos(ctx context.Context, offset uint64, count uint64) (
 
 	rows, err := query.QueryContext(ctx)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 	defer rows.Close()
 
+	var result []howto.Howto
 	for rows.Next() {
 		var howto howto.Howto
 		if err := rows.Scan(howtoRows(&howto)...); err != nil {
@@ -208,5 +212,9 @@ func (repo *repo) ListHowtos(ctx context.Context, offset uint64, count uint64) (
 
 		result = append(result, howto)
 	}
+	if len(result) == 0 {
+		return nil, sql.ErrNoRows
+	}
+
 	return result, nil
 }

@@ -2,6 +2,8 @@ package api
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -59,6 +61,20 @@ func fromParams(params *desc.HowtoParams) howto.Howto {
 	}
 }
 
+func invalidArgErr(err error) error {
+	return status.Error(codes.InvalidArgument, err.Error())
+}
+
+func toStatus(err error) error {
+	if err == nil {
+		return status.Error(codes.OK, "")
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		return status.Error(codes.NotFound, err.Error())
+	}
+	return status.Error(codes.Internal, err.Error())
+}
+
 func (a *api) CreateHowtoV1(
 	ctx context.Context,
 	req *desc.CreateHowtoV1Request,
@@ -66,7 +82,7 @@ func (a *api) CreateHowtoV1(
 
 	if err := req.Validate(); err != nil {
 		log.Error().Err(err).Msg("Requested to create howto with invalid arguments")
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, invalidArgErr(err)
 	}
 
 	metrics.IncrementCreateRequests(1)
@@ -80,13 +96,13 @@ func (a *api) CreateHowtoV1(
 
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to create howto")
-		return nil, err
+		return nil, toStatus(err)
 	}
 
 	log.Info().Uint64("Id", id).Msg("Howto created successfully")
 	a.recordCreates([]uint64{id})
 
-	return &desc.CreateHowtoV1Response{Id: id}, nil
+	return &desc.CreateHowtoV1Response{Id: id}, toStatus(nil)
 }
 
 func (a *api) MultiCreateHowtoV1(
@@ -100,7 +116,7 @@ func (a *api) MultiCreateHowtoV1(
 
 	if err := req.Validate(); err != nil {
 		log.Error().Err(err).Msg("Requested to create howtos with invalid arguments")
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, invalidArgErr(err)
 	}
 
 	metrics.IncrementCreateRequests(len(req.Params))
@@ -113,8 +129,9 @@ func (a *api) MultiCreateHowtoV1(
 
 	added, err := a.repo.AddHowtos(ctx, toAdd)
 	if err != nil {
-		log.Error().Err(err).Msg("Error occurred when creating howtos.")
-		return nil, err
+		log.Error().Int("successfully added", len(added)).Err(err).
+			Msg("Error occurred when creating howtos.")
+		return nil, toStatus(err)
 	}
 
 	addedCount := len(added)
@@ -128,7 +145,7 @@ func (a *api) MultiCreateHowtoV1(
 	}
 
 	a.recordCreates(added)
-	return &desc.MultiCreateHowtoV1Response{Ids: added}, nil
+	return &desc.MultiCreateHowtoV1Response{Ids: added}, toStatus(nil)
 }
 
 func (a *api) UpdateHowtoV1(
@@ -138,7 +155,7 @@ func (a *api) UpdateHowtoV1(
 
 	if err := req.Validate(); err != nil {
 		log.Error().Err(err).Msg("Requested to update howto with invalid arguments")
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, invalidArgErr(err)
 	}
 
 	metrics.IncrementUpdateRequests(1)
@@ -146,13 +163,13 @@ func (a *api) UpdateHowtoV1(
 
 	if err := a.repo.UpdateHowto(ctx, fromMessage(req.Howto)); err != nil {
 		log.Error().Err(err).Msg("Failed to update howto")
-		return nil, err
+		return nil, toStatus(err)
 	}
 
 	log.Info().Msg("Howto updated successfully")
 	a.recordUpdates([]uint64{req.Howto.Id})
 
-	return &desc.UpdateHowtoV1Response{}, nil
+	return &desc.UpdateHowtoV1Response{}, toStatus(nil)
 }
 
 func (a *api) DescribeHowtoV1(
@@ -162,7 +179,7 @@ func (a *api) DescribeHowtoV1(
 
 	if err := req.Validate(); err != nil {
 		log.Error().Err(err).Msg("Requested to describe howto with invalid arguments")
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, invalidArgErr(err)
 	}
 
 	log.Info().Uint64("Id", req.Id).Msg("Requested to describe howto")
@@ -170,11 +187,11 @@ func (a *api) DescribeHowtoV1(
 	howto, err := a.repo.DescribeHowto(ctx, req.Id)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to describe howto")
-		return nil, err
+		return nil, toStatus(err)
 	}
 
 	log.Info().Msg("Howto described successfully")
-	return &desc.DescribeHowtoV1Response{Howto: toMessage(howto)}, nil
+	return &desc.DescribeHowtoV1Response{Howto: toMessage(howto)}, toStatus(nil)
 }
 
 func (a *api) ListHowtosV1(
@@ -184,7 +201,7 @@ func (a *api) ListHowtosV1(
 
 	if err := req.Validate(); err != nil {
 		log.Error().Err(err).Msg("Requested to list howtos with invalid arguments")
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, invalidArgErr(err)
 	}
 
 	log.Info().Msgf("Requested to list %v howtos starting from %v", req.Count, req.Offset)
@@ -192,7 +209,7 @@ func (a *api) ListHowtosV1(
 	howtos, err := a.repo.ListHowtos(ctx, req.Offset, req.Count)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to list howtos")
-		return nil, err
+		return nil, toStatus(err)
 	}
 
 	log.Info().Msg("Howtos listed successfully")
@@ -209,7 +226,7 @@ func (a *api) ListHowtosV1(
 		result = append(result, toMessage(h))
 	}
 
-	return &desc.ListHowtosV1Response{Howtos: result}, nil
+	return &desc.ListHowtosV1Response{Howtos: result}, toStatus(nil)
 }
 
 func (a *api) RemoveHowtoV1(
@@ -219,7 +236,7 @@ func (a *api) RemoveHowtoV1(
 
 	if err := req.Validate(); err != nil {
 		log.Error().Err(err).Msg("Requested to remove howto with invalid arguments")
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, invalidArgErr(err)
 	}
 
 	metrics.IncrementRemoveRequests(1)
@@ -227,13 +244,13 @@ func (a *api) RemoveHowtoV1(
 
 	if err := a.repo.RemoveHowto(ctx, req.Id); err != nil {
 		log.Error().Err(err).Msg("Failed to remove howto")
-		return nil, err
+		return nil, toStatus(err)
 	}
 
 	log.Info().Msg("Howto removed successfully")
 	a.recordRemoves([]uint64{req.Id})
 
-	return &desc.RemoveHowtoV1Response{}, nil
+	return &desc.RemoveHowtoV1Response{}, toStatus(nil)
 }
 
 func (a *api) recordCreates(ids []uint64) {
