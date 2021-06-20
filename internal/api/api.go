@@ -85,6 +85,10 @@ func (a *api) CreateHowtoV1(
 		return nil, invalidArgErr(err)
 	}
 
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Create howto")
+	span.SetTag("Question", req.Params.Question)
+	defer span.Finish()
+
 	metrics.IncrementCreateRequests(1)
 	log.Info().
 		Uint64("CourseId", req.Params.CourseId).
@@ -110,14 +114,15 @@ func (a *api) MultiCreateHowtoV1(
 	req *desc.MultiCreateHowtoV1Request,
 ) (*desc.MultiCreateHowtoV1Response, error) {
 
-	opName := fmt.Sprintf("Create %v howtos", len(req.Params))
-	span, ctx := opentracing.StartSpanFromContext(ctx, opName)
-	defer span.Finish()
-
 	if err := req.Validate(); err != nil {
 		log.Error().Err(err).Msg("Requested to create howtos with invalid arguments")
 		return nil, invalidArgErr(err)
 	}
+
+	opName := fmt.Sprintf("Create %v howtos", len(req.Params))
+	span, ctx := opentracing.StartSpanFromContext(ctx, opName)
+	span.SetTag("Count", len(req.Params))
+	defer span.Finish()
 
 	metrics.IncrementCreateRequests(len(req.Params))
 	log.Info().Msgf("Requested to create %v howtos", len(req.Params))
@@ -158,6 +163,10 @@ func (a *api) UpdateHowtoV1(
 		return nil, invalidArgErr(err)
 	}
 
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Update howto")
+	span.SetTag("Id", req.Howto.Id)
+	defer span.Finish()
+
 	metrics.IncrementUpdateRequests(1)
 	log.Info().Uint64("Id", req.Howto.Id).Msg("Requested to update howto")
 
@@ -182,6 +191,10 @@ func (a *api) DescribeHowtoV1(
 		return nil, invalidArgErr(err)
 	}
 
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Describe howto")
+	span.SetTag("Id", req.Id)
+	defer span.Finish()
+
 	log.Info().Uint64("Id", req.Id).Msg("Requested to describe howto")
 
 	howto, err := a.repo.DescribeHowto(ctx, req.Id)
@@ -203,6 +216,10 @@ func (a *api) ListHowtosV1(
 		log.Error().Err(err).Msg("Requested to list howtos with invalid arguments")
 		return nil, invalidArgErr(err)
 	}
+
+	span, ctx := opentracing.StartSpanFromContext(ctx, "List howtos")
+	span.SetTag("Count", req.Count)
+	defer span.Finish()
 
 	log.Info().Msgf("Requested to list %v howtos starting from %v", req.Count, req.Offset)
 
@@ -238,6 +255,10 @@ func (a *api) RemoveHowtoV1(
 		log.Error().Err(err).Msg("Requested to remove howto with invalid arguments")
 		return nil, invalidArgErr(err)
 	}
+
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Remove howto")
+	span.SetTag("Id", req.Id)
+	defer span.Finish()
 
 	metrics.IncrementRemoveRequests(1)
 	log.Info().Uint64("Id", req.Id).Msg("Requested to remove howto")

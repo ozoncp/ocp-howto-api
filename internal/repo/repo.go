@@ -57,6 +57,9 @@ type repo struct {
 
 func (repo *repo) AddHowto(ctx context.Context, h howto.Howto) (uint64, error) {
 
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Add howto")
+	defer span.Finish()
+
 	added, err := repo.insertBatch(ctx, []howto.Howto{h})
 	if err != nil {
 		return 0, err
@@ -131,6 +134,9 @@ func (repo *repo) insertBatch(ctx context.Context, howtos []howto.Howto) ([]uint
 
 func (repo *repo) UpdateHowto(ctx context.Context, howto howto.Howto) error {
 
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Update howto")
+	defer span.Finish()
+
 	cols := repo.table.columns
 	query := sqr.Update(repo.table.name).
 		Where(sqr.Eq{cols.id: howto.Id}).
@@ -153,6 +159,9 @@ func (repo *repo) UpdateHowto(ctx context.Context, howto howto.Howto) error {
 
 func (repo *repo) RemoveHowto(ctx context.Context, id uint64) error {
 
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Remove howto")
+	defer span.Finish()
+
 	query := sqr.Delete(repo.table.name).
 		Where(sqr.Eq{repo.table.columns.id: id}).
 		RunWith(repo.db).
@@ -171,6 +180,9 @@ func (repo *repo) RemoveHowto(ctx context.Context, id uint64) error {
 
 func (repo *repo) DescribeHowto(ctx context.Context, id uint64) (howto.Howto, error) {
 
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Describe howto")
+	defer span.Finish()
+
 	query := sqr.Select(repo.table.columns.ordered()...).
 		From(repo.table.name).
 		Where(sqr.Eq{repo.table.columns.id: id}).
@@ -186,6 +198,10 @@ func (repo *repo) DescribeHowto(ctx context.Context, id uint64) (howto.Howto, er
 }
 
 func (repo *repo) ListHowtos(ctx context.Context, offset uint64, count uint64) ([]howto.Howto, error) {
+
+	span, ctx := opentracing.StartSpanFromContext(ctx, "List howtos")
+	defer span.Finish()
+
 	if count == 0 {
 		return nil, nil
 	}
