@@ -41,6 +41,13 @@ func (m *CreateHowtoV1Request) Validate() error {
 		return nil
 	}
 
+	if m.GetParams() == nil {
+		return CreateHowtoV1RequestValidationError{
+			field:  "Params",
+			reason: "value is required",
+		}
+	}
+
 	if v, ok := interface{}(m.GetParams()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return CreateHowtoV1RequestValidationError{
@@ -185,6 +192,13 @@ var _ interface {
 func (m *MultiCreateHowtoV1Request) Validate() error {
 	if m == nil {
 		return nil
+	}
+
+	if len(m.GetParams()) < 1 {
+		return MultiCreateHowtoV1RequestValidationError{
+			field:  "Params",
+			reason: "value must contain at least 1 item(s)",
+		}
 	}
 
 	for idx, item := range m.GetParams() {
@@ -336,6 +350,13 @@ func (m *UpdateHowtoV1Request) Validate() error {
 		return nil
 	}
 
+	if m.GetHowto() == nil {
+		return UpdateHowtoV1RequestValidationError{
+			field:  "Howto",
+			reason: "value is required",
+		}
+	}
+
 	if v, ok := interface{}(m.GetHowto()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return UpdateHowtoV1RequestValidationError{
@@ -480,7 +501,12 @@ func (m *DescribeHowtoV1Request) Validate() error {
 		return nil
 	}
 
-	// no validation rules for Id
+	if m.GetId() <= 0 {
+		return DescribeHowtoV1RequestValidationError{
+			field:  "Id",
+			reason: "value must be greater than 0",
+		}
+	}
 
 	return nil
 }
@@ -626,9 +652,19 @@ func (m *ListHowtosV1Request) Validate() error {
 		return nil
 	}
 
-	// no validation rules for Offset
+	if m.GetOffset() < 0 {
+		return ListHowtosV1RequestValidationError{
+			field:  "Offset",
+			reason: "value must be greater than or equal to 0",
+		}
+	}
 
-	// no validation rules for Count
+	if m.GetCount() <= 0 {
+		return ListHowtosV1RequestValidationError{
+			field:  "Count",
+			reason: "value must be greater than 0",
+		}
+	}
 
 	return nil
 }
@@ -779,7 +815,12 @@ func (m *RemoveHowtoV1Request) Validate() error {
 		return nil
 	}
 
-	// no validation rules for Id
+	if m.GetId() <= 0 {
+		return RemoveHowtoV1RequestValidationError{
+			field:  "Id",
+			reason: "value must be greater than 0",
+		}
+	}
 
 	return nil
 }
@@ -915,11 +956,26 @@ func (m *HowtoParams) Validate() error {
 		return nil
 	}
 
-	// no validation rules for CourseId
+	if m.GetCourseId() <= 0 {
+		return HowtoParamsValidationError{
+			field:  "CourseId",
+			reason: "value must be greater than 0",
+		}
+	}
 
-	// no validation rules for Question
+	if utf8.RuneCountInString(m.GetQuestion()) < 1 {
+		return HowtoParamsValidationError{
+			field:  "Question",
+			reason: "value length must be at least 1 runes",
+		}
+	}
 
-	// no validation rules for Answer
+	if utf8.RuneCountInString(m.GetAnswer()) < 1 {
+		return HowtoParamsValidationError{
+			field:  "Answer",
+			reason: "value length must be at least 1 runes",
+		}
+	}
 
 	return nil
 }
@@ -985,7 +1041,19 @@ func (m *Howto) Validate() error {
 		return nil
 	}
 
-	// no validation rules for Id
+	if m.GetId() <= 0 {
+		return HowtoValidationError{
+			field:  "Id",
+			reason: "value must be greater than 0",
+		}
+	}
+
+	if m.GetParams() == nil {
+		return HowtoValidationError{
+			field:  "Params",
+			reason: "value is required",
+		}
+	}
 
 	if v, ok := interface{}(m.GetParams()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {

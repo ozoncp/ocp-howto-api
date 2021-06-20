@@ -12,6 +12,8 @@ import (
 	"github.com/ozoncp/ocp-howto-api/internal/repo"
 	desc "github.com/ozoncp/ocp-howto-api/pkg/ocp-howto-api"
 	log "github.com/rs/zerolog/log"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type api struct {
@@ -62,6 +64,11 @@ func (a *api) CreateHowtoV1(
 	req *desc.CreateHowtoV1Request,
 ) (*desc.CreateHowtoV1Response, error) {
 
+	if err := req.Validate(); err != nil {
+		log.Error().Err(err).Msg("Requested to create howto with invalid arguments")
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	metrics.IncrementCreateRequests(1)
 	log.Info().
 		Uint64("CourseId", req.Params.CourseId).
@@ -73,7 +80,7 @@ func (a *api) CreateHowtoV1(
 
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to create howto")
-		return &desc.CreateHowtoV1Response{}, err
+		return nil, err
 	}
 
 	log.Info().Uint64("Id", id).Msg("Howto created successfully")
@@ -91,6 +98,11 @@ func (a *api) MultiCreateHowtoV1(
 	span, ctx := opentracing.StartSpanFromContext(ctx, opName)
 	defer span.Finish()
 
+	if err := req.Validate(); err != nil {
+		log.Error().Err(err).Msg("Requested to create howtos with invalid arguments")
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	metrics.IncrementCreateRequests(len(req.Params))
 	log.Info().Msgf("Requested to create %v howtos", len(req.Params))
 
@@ -102,7 +114,7 @@ func (a *api) MultiCreateHowtoV1(
 	added, err := a.repo.AddHowtos(ctx, toAdd)
 	if err != nil {
 		log.Error().Err(err).Msg("Error occurred when creating howtos.")
-		return &desc.MultiCreateHowtoV1Response{}, err
+		return nil, err
 	}
 
 	addedCount := len(added)
@@ -124,12 +136,17 @@ func (a *api) UpdateHowtoV1(
 	req *desc.UpdateHowtoV1Request,
 ) (*desc.UpdateHowtoV1Response, error) {
 
+	if err := req.Validate(); err != nil {
+		log.Error().Err(err).Msg("Requested to update howto with invalid arguments")
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	metrics.IncrementUpdateRequests(1)
 	log.Info().Uint64("Id", req.Howto.Id).Msg("Requested to update howto")
 
 	if err := a.repo.UpdateHowto(ctx, fromMessage(req.Howto)); err != nil {
 		log.Error().Err(err).Msg("Failed to update howto")
-		return &desc.UpdateHowtoV1Response{}, err
+		return nil, err
 	}
 
 	log.Info().Msg("Howto updated successfully")
@@ -143,12 +160,17 @@ func (a *api) DescribeHowtoV1(
 	req *desc.DescribeHowtoV1Request,
 ) (*desc.DescribeHowtoV1Response, error) {
 
+	if err := req.Validate(); err != nil {
+		log.Error().Err(err).Msg("Requested to describe howto with invalid arguments")
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	log.Info().Uint64("Id", req.Id).Msg("Requested to describe howto")
 
 	howto, err := a.repo.DescribeHowto(ctx, req.Id)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to describe howto")
-		return &desc.DescribeHowtoV1Response{}, err
+		return nil, err
 	}
 
 	log.Info().Msg("Howto described successfully")
@@ -160,12 +182,17 @@ func (a *api) ListHowtosV1(
 	req *desc.ListHowtosV1Request,
 ) (*desc.ListHowtosV1Response, error) {
 
+	if err := req.Validate(); err != nil {
+		log.Error().Err(err).Msg("Requested to list howtos with invalid arguments")
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	log.Info().Msgf("Requested to list %v howtos starting from %v", req.Count, req.Offset)
 
 	howtos, err := a.repo.ListHowtos(ctx, req.Offset, req.Count)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to list howtos")
-		return &desc.ListHowtosV1Response{}, err
+		return nil, err
 	}
 
 	log.Info().Msg("Howtos listed successfully")
@@ -190,12 +217,17 @@ func (a *api) RemoveHowtoV1(
 	req *desc.RemoveHowtoV1Request,
 ) (*desc.RemoveHowtoV1Response, error) {
 
+	if err := req.Validate(); err != nil {
+		log.Error().Err(err).Msg("Requested to remove howto with invalid arguments")
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	metrics.IncrementRemoveRequests(1)
 	log.Info().Uint64("Id", req.Id).Msg("Requested to remove howto")
 
 	if err := a.repo.RemoveHowto(ctx, req.Id); err != nil {
 		log.Error().Err(err).Msg("Failed to remove howto")
-		return &desc.RemoveHowtoV1Response{}, err
+		return nil, err
 	}
 
 	log.Info().Msg("Howto removed successfully")
