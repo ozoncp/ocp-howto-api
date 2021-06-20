@@ -217,10 +217,10 @@ func (a *api) recordRemoves(ids []uint64) {
 
 func newCudEvent(type_ producer.EventType, ids []uint64) producer.Event {
 	return producer.Event{
-		Type: type_,
+		Type:      type_,
+		Timestamp: time.Now(),
 		Body: map[string]interface{}{
-			"Ids":       ids,
-			"Timestamp": time.Now(),
+			"Ids": ids,
 		},
 	}
 }

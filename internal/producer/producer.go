@@ -2,6 +2,7 @@ package producer
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/Shopify/sarama"
 	log "github.com/rs/zerolog/log"
@@ -18,8 +19,9 @@ const (
 )
 
 type Event struct {
-	Type EventType
-	Body map[string]interface{}
+	Type      EventType
+	Timestamp time.Time
+	Body      map[string]interface{}
 }
 
 type Producer interface {
@@ -134,6 +136,7 @@ func (p *producer) send(event Event) {
 		Partition: p.partition,
 		Key:       p.keyEncoder,
 		Value:     sarama.StringEncoder(json),
+		Timestamp: event.Timestamp,
 	}
 	_, _, err = sender.SendMessage(&message)
 	if err != nil {
