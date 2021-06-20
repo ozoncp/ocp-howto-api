@@ -6,6 +6,7 @@ import (
 	"github.com/ozoncp/ocp-howto-api/internal/howto"
 )
 
+// SplitToBulks разделяет слайс сущностей Howto на слайсы размером batchSize
 func SplitToBulks(questions []howto.Howto, batchSize int) [][]howto.Howto {
 	var batches [][]howto.Howto
 	if len(questions) == 0 || batchSize <= 0 {
@@ -25,6 +26,7 @@ func SplitToBulks(questions []howto.Howto, batchSize int) [][]howto.Howto {
 	return batches
 }
 
+// ConvertToMap конвертирует слайс сущностей Howto в отображение, где ключ - идентификатор сущности, а значение - сама сущность
 func ConvertToMap(howtos []howto.Howto) (map[uint64]howto.Howto, error) {
 	mapped := make(map[uint64]howto.Howto, len(howtos))
 	for _, value := range howtos {

@@ -17,15 +17,28 @@ import (
 
 var dummyHowto = howto.Howto{}
 
+// Repo - интерфейс для работы над сущностями howto в базе данных
 type Repo interface {
+	// AddHowto добавляет сущность в базу данных
 	AddHowto(context.Context, howto.Howto) (uint64, error)
+
+	// AddHowtos добавляет несколько сущностей в базу данных
 	AddHowtos(context.Context, []howto.Howto) ([]uint64, error)
+
+	// UpdateHowto обновлет сущность в базе данных
 	UpdateHowto(context.Context, howto.Howto) error
+
+	// RemoveHowto удаляет сущность из базы данных
 	RemoveHowto(ctx context.Context, id uint64) error
+
+	// DescribeHowto возвращает информацию о сущности по её идентифкатору
 	DescribeHowto(ctx context.Context, id uint64) (howto.Howto, error)
+
+	// ListHowtos возвращает информацию о нескольких сущностях, начиная с offset
 	ListHowtos(ctx context.Context, offset uint64, count uint64) ([]howto.Howto, error)
 }
 
+// NewRepo создает экземпляр Repo
 func NewRepo(db sqlx.DB, batchSize int) Repo {
 	return &repo{
 		db: db,

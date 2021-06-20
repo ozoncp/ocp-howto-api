@@ -8,16 +8,26 @@ import (
 	"github.com/ozoncp/ocp-howto-api/internal/howto"
 )
 
+// OnOverflow - alias для описания поведения в случае переполнения очереди на сохранение
 type OnOverflow int
 
 const (
+	// OnOverflowClearAll - при переполнении удалять всю очередь
 	OnOverflowClearAll OnOverflow = iota
+
+	// OnOverflowClearAll - при переполнении удалять только самую старую сущность
 	OnOverflowClearOldest
 )
 
+// Saver - интерфейс для асинхронного сохранения сущностей
 type Saver interface {
+	// Save добавляет сущность в очередь на сохранение
 	Save(howto.Howto)
+
+	// Init запускает обработку сохранения сущностей
 	Init()
+
+	// Close дожидается сохранения всех сущностей и останаливает обработку
 	Close()
 }
 
@@ -34,6 +44,7 @@ type saver struct {
 	context    context.Context
 }
 
+// NewSaver создает новый экземпляр Saver
 func NewSaver(
 	ctx context.Context,
 	capacity uint,

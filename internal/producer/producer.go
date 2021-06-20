@@ -10,6 +10,7 @@ import (
 	"github.com/ozoncp/ocp-howto-api/internal/config"
 )
 
+// EventType - alias для типа событий
 type EventType = uint64
 
 const (
@@ -18,15 +19,22 @@ const (
 	EventTypeRemoved
 )
 
+// Event - структура, описывающая событие, отправляемое в брокер
 type Event struct {
 	Type      EventType
 	Timestamp time.Time
 	Body      map[string]interface{}
 }
 
+// Producer - интерфейс для отправки событий в брокер событий
 type Producer interface {
+	// Init запускает обработку отправки событий
 	Init()
+
+	// SendEvent добавляет событие в очередь на отправку
 	SendEvent(Event)
+
+	// Close дожидается отправки всех сообщений в брокер и останаливает обработку
 	Close()
 }
 
@@ -42,6 +50,8 @@ type producer struct {
 	done       chan struct{}
 }
 
+// New создает экземпляр Producer
+// Пишет предупрждение в лог, если не удалось создать подключение к брокеру
 func New(cfg config.Kafka) Producer {
 
 	prod := producer{

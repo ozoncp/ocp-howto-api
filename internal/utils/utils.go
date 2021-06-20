@@ -1,5 +1,6 @@
 package utils
 
+// BatchCollection разделяет слайс на слайсы размером size
 func BatchCollection(collection []int, size int) [][]int {
 	var batches [][]int
 	if len(collection) == 0 || size <= 0 {
@@ -19,6 +20,7 @@ func BatchCollection(collection []int, size int) [][]int {
 	return batches
 }
 
+// SwapKeysAndValues меняет ключ и значение в отображении местами
 func SwapKeysAndValues(initial map[int]int) map[int]int {
 	swapped := make(map[int]int, len(initial))
 	for key, value := range initial {
@@ -30,6 +32,7 @@ func SwapKeysAndValues(initial map[int]int) map[int]int {
 	return swapped
 }
 
+// Remove удаляет из слайса values
 func Remove(collection []int, values ...int) []int {
 	var cleared []int
 	for _, value := range collection {

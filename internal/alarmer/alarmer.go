@@ -2,9 +2,15 @@ package alarmer
 
 import "time"
 
+// Alarmer - интерфейс, который посылает сигнал в соответствие с какой-либо логикой
 type Alarmer interface {
+	// Alarm возвращает сигнал
 	Alarm() <-chan struct{}
+
+	// Init запускает обработку событий
 	Init()
+
+	// Close останаливает обработку событий
 	Close()
 }
 
@@ -15,6 +21,7 @@ type periodAlarmer struct {
 	close  chan struct{}
 }
 
+// NewPeriodAlarmer создает экземпляр Alarmer, который посылает сигнал через заданные промежутки времени
 func NewPeriodAlarmer(period time.Duration) Alarmer {
 	return &periodAlarmer{
 		period: period,
