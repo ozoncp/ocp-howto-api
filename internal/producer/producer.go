@@ -46,7 +46,11 @@ func New(brokers []string, topic string, capacity int) Producer {
 		close:   make(chan struct{}),
 		done:    make(chan struct{}),
 	}
-	prod.createProducer()
+
+	_, err := prod.getSender()
+	if err != nil {
+		log.Warn().Err(err).Msg("Failed to create producer sender")
+	}
 
 	return &prod
 }
@@ -85,9 +89,9 @@ func (p *producer) flush() {
 	}
 }
 
-func (p *producer) createProducer() bool {
+func (p *producer) getSender() (sarama.SyncProducer, error) {
 	if p.prod != nil {
-		return true
+		return p.prod, nil
 	}
 
 	config := sarama.NewConfig()
@@ -97,17 +101,18 @@ func (p *producer) createProducer() bool {
 
 	prod, err := sarama.NewSyncProducer(p.brokers, config)
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to create producer")
-		return false
+		return nil, err
 	}
 
 	p.prod = prod
-	return true
+	return prod, nil
 }
 
 func (p *producer) send(event Event) {
 
-	if !p.createProducer() {
+	sender, err := p.getSender()
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to send event")
 		return
 	}
 
@@ -120,8 +125,8 @@ func (p *producer) send(event Event) {
 		Partition: -1,
 		Value:     sarama.StringEncoder(json),
 	}
-	_, _, err = p.prod.SendMessage(&message)
+	_, _, err = sender.SendMessage(&message)
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to send message")
+		log.Error().Err(err).Msg("Failed to send event")
 	}
 }
