@@ -10,7 +10,7 @@ Howto entity represents pair question-answer in some course.
 | Question | String | Question |
 | Answer | String | Answer to the question |
 
-For more information about Ozon Code Platform structure reference to [diagram](https://github.com/ozoncp/docs/).
+For more information about Ozon Code Platform structure refer to [documentation](https://github.com/ozoncp/docs/).
 
 ### Interface
 
@@ -18,7 +18,7 @@ The API contains the following methods:
 | Method | Description |
 | ------ | ------ |
 | AddHowtoV1 | Creates howto in database and returns it's identifier |
-| AddHowtosV1 | Creates several howtos and returns count of successfully created entities |
+| AddHowtosV1 | Creates several howtos and returns identifiers of successfully created entities |
 | UpdateHowtoV1 | Updates information about howto in database |
 | DecribeHowtoV1 | Returns information about howto  |
 | ListHowtosV1 | Returns information about several howtos |
