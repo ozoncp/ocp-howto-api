@@ -28,7 +28,7 @@ type Producer interface {
 
 type producer struct {
 	Producer
-	prod    sarama.SyncProducer
+	sender  sarama.SyncProducer
 	brokers []string
 	topic   string
 	events  chan Event
@@ -39,7 +39,7 @@ type producer struct {
 func New(brokers []string, topic string, capacity int) Producer {
 
 	prod := producer{
-		prod:    nil,
+		sender:  nil,
 		brokers: brokers,
 		topic:   topic,
 		events:  make(chan Event, capacity),
@@ -76,7 +76,6 @@ func (p *producer) poll() {
 		case <-p.close:
 			close(p.events)
 			p.flush()
-			p.prod.Close()
 			p.done <- struct{}{}
 			return
 		}
@@ -87,11 +86,14 @@ func (p *producer) flush() {
 	for event := range p.events {
 		p.send(event)
 	}
+	if p.sender != nil {
+		p.sender.Close()
+	}
 }
 
 func (p *producer) getSender() (sarama.SyncProducer, error) {
-	if p.prod != nil {
-		return p.prod, nil
+	if p.sender != nil {
+		return p.sender, nil
 	}
 
 	config := sarama.NewConfig()
@@ -99,13 +101,13 @@ func (p *producer) getSender() (sarama.SyncProducer, error) {
 	config.Producer.RequiredAcks = sarama.WaitForAll
 	config.Producer.Return.Successes = true
 
-	prod, err := sarama.NewSyncProducer(p.brokers, config)
+	sender, err := sarama.NewSyncProducer(p.brokers, config)
 	if err != nil {
 		return nil, err
 	}
 
-	p.prod = prod
-	return prod, nil
+	p.sender = sender
+	return sender, nil
 }
 
 func (p *producer) send(event Event) {
