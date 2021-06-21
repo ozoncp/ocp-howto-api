@@ -1,4 +1,7 @@
 # OCP Howto API
+
+[![Coverage Actions Status](https://codecov.io/gh/ozoncp/ocp-howto-api/branch/main/graph/badge.svg?token=f8d4ff0d-bedf-4b0d-890c-cb05dc3239e0)](https://codecov.io/gh/ozoncp/ocp-howto-api)
+
 OCP Howto API is an API for Ozon Code Platform that provides access to howto entities.
 Howto entity represents pair question-answer in some course.
 
