@@ -12,12 +12,16 @@ database :
   password : ""
   database : ""
   sslmode : "disable"
+  batch_size : 1000
 
 metrics :
   address : ":9100"
   pattern : "/metrics"
 
 kafka:
+  events_queue_capacity: 100
   topic : "howto"
+  key : "key"
+  partition : 0
   brokers:
   - ":9092"

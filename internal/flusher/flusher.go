@@ -7,7 +7,10 @@ import (
 	"github.com/ozoncp/ocp-howto-api/internal/repo"
 )
 
+// Flusher - интерфейс для добавления в Repo нескольких сущностей Howto
 type Flusher interface {
+	// Flush добавляет в Repo несколько сущностей Howto
+	// В случае ошибки возвращает слайс из Howto, которые не удалось добавить
 	Flush(context.Context, []howto.Howto) []howto.Howto
 }
 
@@ -24,6 +27,7 @@ func (f *flusher) Flush(ctx context.Context, howtos []howto.Howto) []howto.Howto
 	return nil
 }
 
+// New создает экземпляр Flusher
 func New(repo repo.Repo) Flusher {
 	return &flusher{
 		repo: repo,

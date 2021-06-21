@@ -6,6 +6,7 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/Masterminds/squirrel v1.5.0
 	github.com/Shopify/sarama v1.29.0
+	github.com/envoyproxy/protoc-gen-validate v0.6.1 // indirect
 	github.com/golang/mock v1.5.0
 	github.com/jmoiron/sqlx v1.3.4
 	github.com/lib/pq v1.10.2
@@ -19,6 +20,7 @@ require (
 	golang.org/x/sys v0.0.0-20210611083646-a4fc73990273 // indirect
 	google.golang.org/genproto v0.0.0-20210614143202-012ab6975634 // indirect
 	google.golang.org/grpc v1.38.0
+	google.golang.org/protobuf v1.26.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 )
 

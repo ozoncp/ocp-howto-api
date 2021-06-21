@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "google/api/annotations.proto";
+import "validate/validate.proto";
 
 package ocp.howto.api;
 
@@ -52,9 +53,7 @@ service OcpHowtoApi {
 }
 
 message CreateHowtoV1Request {
-    uint64 course_id = 1;
-    string question = 2;
-    string answer = 3;
+    HowtoParams params = 1 [(validate.rules).message.required = true];
 }
 
 message CreateHowtoV1Response {
@@ -62,22 +61,22 @@ message CreateHowtoV1Response {
 }
 
 message MultiCreateHowtoV1Request {
-    repeated Howto howtos = 1;
+    repeated HowtoParams params = 1 [(validate.rules).repeated.min_items = 1];
 }
 
 message MultiCreateHowtoV1Response {
-    uint64 added = 1;
+    repeated uint64 ids = 1;
 }
 
 message UpdateHowtoV1Request {
-    Howto howto = 1;
+    Howto howto = 1 [(validate.rules).message.required = true];
 }
 
 message UpdateHowtoV1Response {
 }
 
 message DescribeHowtoV1Request {
-    uint64 id = 1;
+    uint64 id = 1 [(validate.rules).uint64.gt = 0];
 }
 
 message DescribeHowtoV1Response {
@@ -85,8 +84,8 @@ message DescribeHowtoV1Response {
 }
 
 message ListHowtosV1Request {
-    uint64 offset = 1;
-    uint64 count = 2;
+    uint64 offset = 1 [(validate.rules).uint64.gte = 0];
+    uint64 count = 2 [(validate.rules).uint64.gt = 0];
 }
 
 message ListHowtosV1Response {
@@ -94,16 +93,21 @@ message ListHowtosV1Response {
 }
 
 message RemoveHowtoV1Request {
-    uint64 id = 1;
+    uint64 id = 1 [(validate.rules).uint64.gt = 0];
 }
 
 message RemoveHowtoV1Response {
 }
 
+// Параметры сущности howto
+message HowtoParams{
+    uint64 course_id = 1 [(validate.rules).uint64.gt = 0];
+    string question = 2 [(validate.rules).string.min_len = 1];
+    string answer = 3 [(validate.rules).string.min_len = 1];
+}
+
 // Описание сущности howto
 message Howto {
-    uint64 id = 1;
-    uint64 course_id = 2;
-    string question = 3;
-    string answer = 4;
+    uint64 id = 1 [(validate.rules).uint64.gt = 0];
+    HowtoParams params = 2 [(validate.rules).message.required = true];
 }

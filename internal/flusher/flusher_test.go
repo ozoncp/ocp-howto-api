@@ -16,6 +16,15 @@ import (
 var errDummy = errors.New("some error")
 var dummyId = uint64(0)
 
+func newHowto(course uint64, q string, a string) howto.Howto {
+	return howto.Howto{
+		Id:       dummyId,
+		CourseId: course,
+		Question: q,
+		Answer:   q,
+	}
+}
+
 var _ = Describe("Flusher", func() {
 
 	var (
@@ -33,11 +42,11 @@ var _ = Describe("Flusher", func() {
 		mockRepo = mocks.NewMockRepo(ctrl)
 		f = flusher.New(mockRepo)
 		toFlush = []howto.Howto{
-			*howto.New(1, "question0", "answer0"),
-			*howto.New(1, "question1", "answer1"),
-			*howto.New(1, "question2", "answer2"),
-			*howto.New(1, "question3", "answer3"),
-			*howto.New(1, "question4", "answer4"),
+			newHowto(1, "question0", "answer0"),
+			newHowto(1, "question1", "answer1"),
+			newHowto(1, "question2", "answer2"),
+			newHowto(1, "question3", "answer3"),
+			newHowto(1, "question4", "answer4"),
 		}
 	})
 

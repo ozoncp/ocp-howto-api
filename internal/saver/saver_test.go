@@ -21,7 +21,7 @@ var _ = Describe("Saver", func() {
 		mockFlusher *mocks.MockFlusher
 		alarm       alarmer.Alarmer
 		hourAlarm   alarmer.Alarmer
-		saved       []howto.Howto
+		saved       chan howto.Howto
 		period      time.Duration = 200 * time.Millisecond
 		toSave      howto.Howto   = howto.Howto{}
 	)
@@ -47,7 +47,7 @@ var _ = Describe("Saver", func() {
 		hourAlarm = alarmer.NewPeriodAlarmer(time.Hour)
 		alarm.Init()
 		hourAlarm.Init()
-		saved = make([]howto.Howto, 0)
+		saved = make(chan (howto.Howto), 20)
 	})
 
 	AfterEach(func() {
@@ -61,7 +61,10 @@ var _ = Describe("Saver", func() {
 		BeforeEach(func() {
 			mockFlusher.EXPECT().Flush(ctx, gomock.Any()).MinTimes(1).DoAndReturn(
 				func(ctx context.Context, howtos []howto.Howto) []howto.Howto {
-					saved = append(saved, howtos...)
+					for _, h := range howtos {
+						saved <- h
+					}
+
 					return nil
 				})
 		})

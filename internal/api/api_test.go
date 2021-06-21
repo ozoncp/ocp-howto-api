@@ -36,6 +36,7 @@ var _ = Describe("Api", func() {
 		server desc.OcpHowtoApiServer
 		ctrl   *gomock.Controller
 		prod   *mocks.MockProducer
+		params *desc.HowtoParams
 	)
 
 	BeforeEach(func() {
@@ -45,12 +46,47 @@ var _ = Describe("Api", func() {
 		db, mock, _ = sqlmock.New()
 		dbx = sqlx.NewDb(db, "sqlmock")
 		server = api.NewOcpHowtoApi(repo.NewRepo(*dbx, 10), prod)
+		params = &desc.HowtoParams{
+			CourseId: 42,
+			Question: "Question",
+			Answer:   "Answer",
+		}
 	})
 
 	AfterEach(func() {
 		db.Close()
 		dbx.Close()
 		ctrl.Finish()
+	})
+
+	Context("Invalid arguments", func() {
+		It("Create", func() {
+			response, err := server.CreateHowtoV1(ctx, &desc.CreateHowtoV1Request{
+				Params: &desc.HowtoParams{CourseId: 123, Question: "Question", Answer: ""},
+			})
+			Expect(response).Should(BeNil())
+			Expect(err).ShouldNot(BeNil())
+		})
+		It("MultiCreate", func() {
+			response, err := server.MultiCreateHowtoV1(ctx, &desc.MultiCreateHowtoV1Request{})
+			Expect(response).Should(BeNil())
+			Expect(err).ShouldNot(BeNil())
+		})
+		It("Update", func() {
+			response, err := server.UpdateHowtoV1(ctx, &desc.UpdateHowtoV1Request{})
+			Expect(response).Should(BeNil())
+			Expect(err).ShouldNot(BeNil())
+		})
+		It("List", func() {
+			response, err := server.ListHowtosV1(ctx, &desc.ListHowtosV1Request{Offset: 5, Count: 0})
+			Expect(response).Should(BeNil())
+			Expect(err).ShouldNot(BeNil())
+		})
+		It("Remove", func() {
+			response, err := server.RemoveHowtoV1(ctx, &desc.RemoveHowtoV1Request{Id: 0})
+			Expect(response).Should(BeNil())
+			Expect(err).ShouldNot(BeNil())
+		})
 	})
 
 	Context("Create", func() {
@@ -66,14 +102,10 @@ var _ = Describe("Api", func() {
 
 		BeforeEach(func() {
 			id = 12
-			request = &desc.CreateHowtoV1Request{
-				CourseId: 42,
-				Question: "Question",
-				Answer:   "Answer",
-			}
+			request = &desc.CreateHowtoV1Request{Params: params}
 			rows = sqlmock.NewRows([]string{"id"})
 			query = mock.ExpectQuery(fmt.Sprintf("INSERT INTO %v", tableName)).
-				WithArgs(request.CourseId, request.Question, request.Answer)
+				WithArgs(params.CourseId, params.Question, params.Answer)
 		})
 
 		It("successfully", func() {
@@ -87,7 +119,7 @@ var _ = Describe("Api", func() {
 		It("failed", func() {
 			query.WillReturnError(errors.New(""))
 			response, err = server.CreateHowtoV1(ctx, request)
-			Expect(response.Id).Should(BeEquivalentTo(dummyId))
+			Expect(response).Should(BeNil())
 			Expect(err).ShouldNot(BeNil())
 		})
 	})
@@ -97,40 +129,49 @@ var _ = Describe("Api", func() {
 		var (
 			request  *desc.MultiCreateHowtoV1Request
 			response *desc.MultiCreateHowtoV1Response
-			exec     *sqlmock.ExpectedExec
+			query    *sqlmock.ExpectedQuery
+			rows     *sqlmock.Rows
 			err      error
 		)
 
 		BeforeEach(func() {
 			request = &desc.MultiCreateHowtoV1Request{
-				Howtos: []*desc.Howto{{}, {}, {}},
+				Params: []*desc.HowtoParams{params, params, params},
 			}
 			args := []driver.Value{}
-			for i := 0; i < len(request.Howtos); i++ {
-				h := request.Howtos[i]
+			for i := 0; i < len(request.Params); i++ {
+				h := request.Params[i]
 				args = append(args, h.CourseId, h.Question, h.Answer)
 			}
-			exec = mock.ExpectExec(fmt.Sprintf("INSERT INTO %v", tableName)).WithArgs(args...)
-			prod.EXPECT().SendEvent(gomock.Any()).Times(1)
+			rows = sqlmock.NewRows([]string{"id"})
+			query = mock.ExpectQuery(fmt.Sprintf("INSERT INTO %v", tableName)).WithArgs(args...)
 		})
 
 		It("successfully", func() {
-			exec.WillReturnResult(sqlmock.NewResult(dummyId, int64(len(request.Howtos))))
+			for i := 0; i < len(request.Params); i++ {
+				rows.AddRow(dummyId)
+			}
+			query.WillReturnRows(rows)
+			prod.EXPECT().SendEvent(gomock.Any()).Times(1)
 			response, err = server.MultiCreateHowtoV1(ctx, request)
-			Expect(response.Added).Should(BeEquivalentTo(len(request.Howtos)))
+			Expect(len(response.Ids)).Should(BeEquivalentTo(len(request.Params)))
 			Expect(err).Should(BeNil())
 		})
 
 		It("partially", func() {
-			added := int64(1)
-			exec.WillReturnResult(sqlmock.NewResult(dummyId, added))
+			added := 1
+			for i := 0; i < added; i++ {
+				rows.AddRow(dummyId)
+			}
+			query.WillReturnRows(rows)
+			prod.EXPECT().SendEvent(gomock.Any()).Times(1)
 			response, err = server.MultiCreateHowtoV1(ctx, request)
-			Expect(response.Added).Should(BeEquivalentTo(added))
+			Expect(len(response.Ids)).Should(BeEquivalentTo(added))
 			Expect(err).Should(BeNil())
 		})
 
 		It("failed", func() {
-			exec.WillReturnError(errors.New(""))
+			query.WillReturnError(errors.New(""))
 			response, err = server.MultiCreateHowtoV1(ctx, request)
 			Expect(err).ShouldNot(BeNil())
 		})
@@ -147,14 +188,12 @@ var _ = Describe("Api", func() {
 
 		BeforeEach(func() {
 			h := desc.Howto{
-				Id:       12,
-				CourseId: 42,
-				Question: "Question",
-				Answer:   "Answer",
+				Id:     12,
+				Params: params,
 			}
 			request = &desc.UpdateHowtoV1Request{Howto: &h}
 			exec = mock.ExpectExec(fmt.Sprintf("UPDATE %v", tableName)).
-				WithArgs(h.CourseId, h.Question, h.Answer, h.Id)
+				WithArgs(params.CourseId, params.Question, params.Answer, h.Id)
 		})
 
 		It("successfully", func() {
@@ -188,9 +227,7 @@ var _ = Describe("Api", func() {
 		)
 
 		BeforeEach(func() {
-			request = &desc.RemoveHowtoV1Request{
-				Id: 1,
-			}
+			request = &desc.RemoveHowtoV1Request{Id: 1}
 			exec = mock.ExpectExec(fmt.Sprintf("DELETE FROM %v", tableName)).WithArgs(request.Id)
 		})
 
@@ -229,10 +266,8 @@ var _ = Describe("Api", func() {
 
 		BeforeEach(func() {
 			row = desc.Howto{
-				Id:       5,
-				CourseId: 10,
-				Question: "Question",
-				Answer:   "Answer",
+				Id:     5,
+				Params: params,
 			}
 			request = &desc.DescribeHowtoV1Request{
 				Id: row.Id,
@@ -243,13 +278,14 @@ var _ = Describe("Api", func() {
 		})
 
 		It("successfully", func() {
-			rows.AddRow(row.Id, row.CourseId, row.Question, row.Answer)
+			rows.AddRow(row.Id, params.CourseId, params.Question, params.Answer)
 			query.WillReturnRows(rows)
 			response, err = server.DescribeHowtoV1(ctx, request)
+			rParams := response.Howto.Params
 			Expect(response.Howto.Id).Should(BeEquivalentTo(row.Id))
-			Expect(response.Howto.CourseId).Should(BeEquivalentTo(row.CourseId))
-			Expect(response.Howto.Question).Should(BeEquivalentTo(row.Question))
-			Expect(response.Howto.Answer).Should(BeEquivalentTo(row.Answer))
+			Expect(rParams.CourseId).Should(BeEquivalentTo(params.CourseId))
+			Expect(rParams.Question).Should(BeEquivalentTo(params.Question))
+			Expect(rParams.Answer).Should(BeEquivalentTo(params.Answer))
 			Expect(err).Should(BeNil())
 		})
 
@@ -295,7 +331,7 @@ var _ = Describe("Api", func() {
 		It("failed", func() {
 			query.WillReturnError(errors.New(""))
 			response, err = server.ListHowtosV1(ctx, request)
-			Expect(len(response.Howtos)).Should(BeEquivalentTo(0))
+			Expect(response).Should(BeNil())
 			Expect(err).ShouldNot(BeNil())
 		})
 	})

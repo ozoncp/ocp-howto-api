@@ -1,42 +1,81 @@
 package metrics
 
-import "github.com/prometheus/client_golang/prometheus"
-
-var (
-	counters *prometheus.CounterVec
-	label    string = "action"
-	create   string = "create"
-	update   string = "update"
-	remove   string = "remove"
+import (
+	"github.com/prometheus/client_golang/prometheus"
 )
 
+var (
+	actions  *prometheus.CounterVec
+	requests *prometheus.CounterVec
+)
+
+const (
+	label  string = "action"
+	create string = "create"
+	update string = "update"
+	remove string = "remove"
+)
+
+// Register создает и регистрирует необходимые счетчики
 func Register() {
-	counters = prometheus.NewCounterVec(
+	requests = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "howto_actions",
+			Name: "howto_requests",
+			Help: "Number of requests for howto CUD actions.",
+		},
+		[]string{label},
+	)
+	actions = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "howto_successful_actions",
 			Help: "Number of howto CUD actions successfully performed.",
 		},
 		[]string{label},
 	)
 
-	prometheus.MustRegister(counters)
+	prometheus.MustRegister(requests, actions)
 }
 
-func increment(action string, times uint64) {
-	if counters == nil {
+func incrementRequests(req string, times int) {
+	if requests == nil {
 		return
 	}
-	counters.With(prometheus.Labels{label: action}).Add(float64(times))
+	requests.With(prometheus.Labels{label: req}).Add(float64(times))
 }
 
-func IncrementCreates(times uint64) {
-	increment(create, times)
+func incrementActions(act string, times int) {
+	if actions == nil {
+		return
+	}
+	actions.With(prometheus.Labels{label: act}).Add(float64(times))
 }
 
-func IncrementUpdates(times uint64) {
-	increment(update, times)
+// IncrementCreateRequests увеливает счетчик запросов на создание Howto
+func IncrementCreateRequests(times int) {
+	incrementRequests(create, times)
 }
 
-func IncrementRemoves(times uint64) {
-	increment(remove, times)
+// IncrementUpdateRequests увеливает счетчик запросов на обновление Howto
+func IncrementUpdateRequests(times int) {
+	incrementRequests(update, times)
+}
+
+// IncrementRemoveRequests увеливает счетчик запросов на удаление Howto
+func IncrementRemoveRequests(times int) {
+	incrementRequests(remove, times)
+}
+
+// IncrementCreates увеливает счетчик успешных созданий Howto
+func IncrementCreates(times int) {
+	incrementActions(create, times)
+}
+
+// IncrementUpdates увеливает счетчик успешных обновлений Howto
+func IncrementUpdates(times int) {
+	incrementActions(update, times)
+}
+
+// IncrementRemoves увеливает счетчик успешных удалений Howto
+func IncrementRemoves(times int) {
+	incrementActions(remove, times)
 }
